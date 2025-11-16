@@ -3,7 +3,9 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
 exports.renderLogin = (req, res) => {
-  res.render('login', { title: 'Đăng nhập' });
+  // error + previous email passed via query or flash-like params
+  const { error, email } = req.query;
+  res.render('login', { title: 'Đăng nhập', error, email });
 };
 
 exports.renderRegister = (req, res) => {
@@ -30,11 +32,15 @@ exports.login = async (req, res) => {
   const { email, password } = req.body;
   try {
     const r = await pool.query('SELECT * FROM users WHERE email=$1', [email]);
-    if (!r.rows.length) return res.send('Sai email');
+    if (!r.rows.length) {
+      return res.status(400).render('login', { title: 'Đăng nhập', error: 'Sai email hoặc chưa đăng ký', email });
+    }
 
     const user = r.rows[0];
     const ok = await bcrypt.compare(password, user.password);
-    if (!ok) return res.send('Sai mật khẩu');
+    if (!ok) {
+      return res.status(400).render('login', { title: 'Đăng nhập', error: 'Sai mật khẩu', email });
+    }
 
     const token = jwt.sign(
       { id: user.id, name: user.name, role: user.role },

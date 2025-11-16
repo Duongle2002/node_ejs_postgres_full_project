@@ -3,10 +3,13 @@
   <div class="auth-card">
     <h2 class="auth-title">Đăng nhập</h2>
     <div class="auth-sub">Đăng nhập để tiếp tục mua sắm và quản lý đơn hàng của bạn.</div>
+    <% if (typeof error !== 'undefined' && error) { %>
+      <div class="auth-error" style="color:#c00;margin-bottom:12px;font-weight:500"><%= error %></div>
+    <% } %>
     <form method="POST" action="/login">
       <div class="auth-field">
         <label>Email</label>
-        <input class="input" name="email" required autocomplete="email" />
+        <input class="input" name="email" required autocomplete="email" value="<%= email || '' %>" />
       </div>
       <div class="auth-field">
         <label>Mật khẩu</label>
