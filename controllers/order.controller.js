@@ -27,8 +27,11 @@ const shippingFee = (method) => {
 exports.checkoutPage = async (req, res) => {
   const user_id = req.user.id;
   const r = await pool.query(
-    `SELECT products.id as product_id, products.name, products.price, products.stock, products.image, cart.quantity
-     FROM cart JOIN products ON products.id=cart.product_id WHERE cart.user_id=$1`,
+    `SELECT p.id AS product_id, p.name, p.price, p.stock, p.image, ci.qty AS quantity
+     FROM cart c
+     JOIN cart_items ci ON ci.cart_id = c.id
+     JOIN products p ON p.id = ci.product_id
+     WHERE c.user_id=$1`,
     [user_id]
   );
 
@@ -59,7 +62,11 @@ exports.createOrder = async (req, res) => {
   const addr = await pool.query('SELECT id FROM addresses WHERE id=$1 AND user_id=$2', [address_id, user_id]);
   if (!addr.rows.length) return res.status(400).json({ error: 'invalid_address' });
   const r = await pool.query(
-    `SELECT products.id, products.price, products.stock, cart.quantity FROM cart JOIN products ON products.id=cart.product_id WHERE cart.user_id=$1`,
+    `SELECT p.id, p.price, p.stock, ci.qty AS quantity
+     FROM cart c
+     JOIN cart_items ci ON ci.cart_id = c.id
+     JOIN products p ON p.id = ci.product_id
+     WHERE c.user_id=$1`,
     [user_id]
   );
   const itemsTotal = r.rows.reduce((s,row) => s + parseFloat(row.price) * row.quantity, 0);
@@ -109,7 +116,11 @@ exports.capture = async (req, res) => {
     console.log('PayPal captured order token=', orderID);
     const user_id = req.user.id;
     const rows = await pool.query(
-      `SELECT products.id, products.price, products.stock, cart.quantity FROM cart JOIN products ON products.id=cart.product_id WHERE cart.user_id=$1`,
+      `SELECT p.id, p.price, p.stock, ci.qty AS quantity
+       FROM cart c
+       JOIN cart_items ci ON ci.cart_id = c.id
+       JOIN products p ON p.id = ci.product_id
+       WHERE c.user_id=$1`,
       [user_id]
     );
 
@@ -312,7 +323,11 @@ exports.qrStart = async (req, res) => {
   if (!addr.rows.length) return res.status(400).json({ error: 'invalid_address' });
 
   const r = await pool.query(
-    `SELECT products.price, products.stock, cart.quantity FROM cart JOIN products ON products.id=cart.product_id WHERE cart.user_id=$1`,
+    `SELECT p.price, p.stock, ci.qty AS quantity
+     FROM cart c
+     JOIN cart_items ci ON ci.cart_id = c.id
+     JOIN products p ON p.id = ci.product_id
+     WHERE c.user_id=$1`,
     [user_id]
   );
   // stock check
@@ -343,7 +358,11 @@ exports.qrConfirm = async (req, res) => {
   const clientDb = await pool.connect();
   try {
     const rows = await clientDb.query(
-      `SELECT products.id, products.price, products.stock, cart.quantity FROM cart JOIN products ON products.id=cart.product_id WHERE cart.user_id=$1`,
+      `SELECT p.id, p.price, p.stock, ci.qty AS quantity
+       FROM cart c
+       JOIN cart_items ci ON ci.cart_id = c.id
+       JOIN products p ON p.id = ci.product_id
+       WHERE c.user_id=$1`,
       [user_id]
     );
     await clientDb.query('BEGIN');
@@ -389,7 +408,11 @@ exports.codCreate = async (req, res) => {
   const clientDb = await pool.connect();
   try {
     const rows = await clientDb.query(
-      `SELECT products.id, products.price, products.stock, cart.quantity FROM cart JOIN products ON products.id=cart.product_id WHERE cart.user_id=$1`,
+      `SELECT p.id, p.price, p.stock, ci.qty AS quantity
+       FROM cart c
+       JOIN cart_items ci ON ci.cart_id = c.id
+       JOIN products p ON p.id = ci.product_id
+       WHERE c.user_id=$1`,
       [user_id]
     );
     await clientDb.query('BEGIN');
