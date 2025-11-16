@@ -45,6 +45,7 @@ app.locals.VIETQR_ACC_NAME = process.env.VIETQR_ACC_NAME || '';
 	try { await require('./migrations/ensure_unbounded_text_columns')(); } catch (e) { console.error('ensure_unbounded_text_columns failed', e.message); }
 	try { await require('./migrations/ensure_ship_method_column')(); } catch (e) { console.error('ensure_ship_method_column failed', e.message); }
 	try { await require('./migrations/ensure_order_cancellation')(); } catch (e) { console.error('ensure_order_cancellation failed', e.message); }
+	try { await require('./migrations/ensure_admin_user')(); } catch (e) { console.error('ensure_admin_user failed', e.message); }
 })();
 
 // expose user and path to all views (non-blocking auth)
