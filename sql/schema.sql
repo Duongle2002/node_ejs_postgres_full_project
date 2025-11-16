@@ -17,11 +17,21 @@ CREATE TABLE IF NOT EXISTS products (
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- ensure products has common columns used by the app
+ALTER TABLE products ADD COLUMN IF NOT EXISTS slug TEXT;
+ALTER TABLE products ADD COLUMN IF NOT EXISTS stock INT DEFAULT 0;
+
 CREATE TABLE IF NOT EXISTS cart (
   id SERIAL PRIMARY KEY,
-  user_id INT REFERENCES users(id) ON DELETE CASCADE,
+  user_id INT UNIQUE REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS cart_items (
+  id SERIAL PRIMARY KEY,
+  cart_id INT REFERENCES cart(id) ON DELETE CASCADE,
   product_id INT REFERENCES products(id) ON DELETE CASCADE,
-  quantity INT DEFAULT 1
+  qty INT DEFAULT 1,
+  UNIQUE (cart_id, product_id)
 );
 
 CREATE TABLE IF NOT EXISTS orders (
