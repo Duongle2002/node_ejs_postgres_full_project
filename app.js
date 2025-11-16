@@ -5,6 +5,13 @@ const path = require('path');
 const app = express();
 const engine = require('ejs-mate');
 const jwt = require('jsonwebtoken');
+// API routes
+const apiAuth = require('./routes/api/auth');
+const apiUsers = require('./routes/api/users');
+const apiProducts = require('./routes/api/products');
+const apiCart = require('./routes/api/cart');
+const apiAddresses = require('./routes/api/addresses');
+const apiOrders = require('./routes/api/orders');
 
 // middleware
 app.use(express.urlencoded({ extended: true }));
@@ -107,6 +114,14 @@ app.use('/admin/products', require('./routes/admin.products.routes'));
 app.use('/admin/orders', require('./routes/admin.orders.routes'));
 app.use('/admin/users', require('./routes/admin.users.routes'));
 app.use('/user', require('./routes/user.routes'));
+
+// JSON API (cookie-JWT auth)
+app.use('/api/auth', apiAuth);
+app.use('/api/users', apiUsers);
+app.use('/api/products', apiProducts);
+app.use('/api/cart', apiCart);
+app.use('/api/addresses', apiAddresses);
+app.use('/api/orders', apiOrders);
 
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
