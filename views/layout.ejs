@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title><%= title || 'Shop' %></title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <nav class="nav">
+    <div class="nav__inner">
+      <a class="logo" href="/">
+        <% if (LOGO_URL) { %>
+          <img src="<%= LOGO_URL %>" alt="Logo">
+        <% } else { %>
+          <span>Shop</span>
+        <% } %>
+      </a>
+      <% if (user && user.role === 'admin') { %>
+        <a href="/admin" class="<%= (path||'').startsWith('/admin') ? 'active' : '' %>">Tổng quan</a>
+        <a href="/admin/orders" class="<%= (path||'').startsWith('/admin/orders') ? 'active' : '' %>">Đơn hàng</a>
+        <a href="/admin/products" class="<%= (path||'').startsWith('/admin/products') ? 'active' : '' %>">Sản phẩm</a>
+        <a href="/admin/users" class="<%= (path||'').startsWith('/admin/users') ? 'active' : '' %>">Người dùng</a>
+      <% } else { %>
+        <a href="/products" class="<%= (path||'').startsWith('/products') ? 'active' : '' %>">Sản phẩm</a>
+        <a href="/cart" class="<%= (path||'')==='/cart' ? 'active' : '' %>">Giỏ hàng <span id="navCartCount" class="nav__count" style="display:none">0</span></a>
+      <% } %>
+      <span style="flex:1"></span>
+      <div class="nav__currency">
+        <span class="muted">Tiền tệ:</span>
+        <a href="/currency/set?c=USD" class="currency-link <%= (currency==='USD') ? 'active' : '' %>">USD</a>
+        <span class="muted" style="opacity:.4">|</span>
+        <a href="/currency/set?c=VND" class="currency-link <%= (currency==='VND') ? 'active' : '' %>">VND</a>
+      </div>
+      <% try { if (user) { %>
+        <% if (user.role !== 'admin') { %>
+          <a href="/orders/history" class="<%= (path||'').startsWith('/orders') ? 'active' : '' %>">Lịch sử đơn hàng</a>
+        <% } %>
+        <% /* admin links shown earlier in nav for admin users - order history hidden for admin */ %>
+  <span class="nav__greet">Xin chào <strong><%= user.name %></strong></span>
+  <a href="/logout" class="nav__logout">Đăng xuất</a>
+  <span id="authFlag" style="display:none"></span>
+      <% } else { %>
+        <a href="/login">Đăng nhập</a>
+        <a href="/register">Đăng ký</a>
+      <% } } catch {} %>
+    </div>
+  </nav>
+  <main class="container">
+    <%- body %>
+  </main>
+  <footer class="site-footer">
+    <div class="site-footer__inner">
+      <div class="footer-col">
+        <a class="logo" href="/">Shop</a>
+        <div class="muted" style="margin-top:6px">&copy; <%= new Date().getFullYear() %> Shop. All rights reserved.</div>
+      </div>
+      <div class="footer-col">
+        <strong>Khám phá</strong>
+        <div><a href="/products">Sản phẩm</a></div>
+        <div><a href="/cart">Giỏ hàng</a></div>
+      </div>
+      <div class="footer-col">
+        <strong>Admin</strong>
+        <div><a href="/admin">Bảng điều khiển</a></div>
+        <div><a href="/admin/products">Quản lý sản phẩm</a></div>
+      </div>
+      <div class="footer-col">
+        <strong>Thông tin</strong>
+        <div class="muted" style="font-size:13px">Tỷ giá: <strong><%= usdToVnd %></strong> VND / USD</div>
+      </div>
+    </div>
+  </footer>
+  <script>
+  (function(){
+    try {
+      if (!document.getElementById('authFlag')) return;
+      fetch('/cart/count', { credentials:'include', headers:{'Accept':'application/json'} })
+        .then(r => r.ok ? r.json() : null)
+        .then(j => { if (!j) return; var el = document.getElementById('navCartCount'); if (!el) return; el.textContent = j.count || 0; el.style.display = (j.count>0)?'inline-block':'none'; })
+        .catch(()=>{});
+    } catch(e){}
+  })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,150 @@
+<% layout('layout') -%>
+<section class="order-detail">
+  <div class="panel">
+    <h2>Chi tiết đơn hàng #<%= order.id %></h2>
+  </div>
+
+  <!-- Stepper -->
+  <% const steps = ['Chờ xác nhận','Chờ lấy hàng','Chờ giao hàng','Đã giao']; %>
+  <% const statusMap = { paid:0, processing:1, confirmed:1, picked:2, shipped:2, delivered:3 }; %>
+  <% const active = (statusMap[order.status]!==undefined)?statusMap[order.status]:0; %>
+  <div class="panel stepper">
+    <div class="step-row">
+      <% steps.forEach((s,idx)=>{ %>
+        <div class="step-box">
+          <div class="<%= idx<=active ? 'step--done' : '' %>">
+            <div class="step-circle"><%= idx+1 %></div>
+          </div>
+          <div class="step-label <%= idx===active ? 'step--active' : '' %>"><%= s %></div>
+        </div>
+        <% if (idx < steps.length-1) { %>
+          <div class="step-bar <%= idx<active ? 'step--done' : '' %>"></div>
+        <% } %>
+      <% }) %>
+    </div>
+  </div>
+
+  <div class="panel">
+    <% const cancelCls = (order.status === 'cancelled') ? 'show' : 'hide'; %>
+    <div id="cancelBanner" class="cancel-banner <%= cancelCls %>">
+      <strong>Đơn hàng đã bị hủy</strong>
+      <% if (order.cancellation_reason) { %>
+        <div style="margin-top:6px">Lý do: <%= order.cancellation_reason %></div>
+      <% } %>
+      <% if (order.cancelled_at) { %>
+        <div style="margin-top:6px; font-size:13px; color:var(--muted)">Thời gian: <%= new Date(order.cancelled_at).toLocaleString() %></div>
+      <% } %>
+    </div>
+
+    <div style="margin-top:12px">
+      <div class="muted">Phương thức thanh toán: <strong><%= order.payment_method %></strong></div>
+      <div style="margin-top:8px">
+        <strong><%= order.address.full_name || '' %> <span class="muted">(<%= order.address.phone || '—' %>)</span></strong>
+        <div class="muted" style="margin-top:6px"><%= order.address.line1 %><% if (order.address.line2){ %>, <%= order.address.line2 %><% } %>, <%= order.address.city || '' %> <%= order.address.state || '' %> <%= order.address.postal_code || '' %>, <%= order.address.country || '' %></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h4>Sản phẩm</h4>
+    <div class="product-list">
+      <% order.items.forEach(it=>{ %>
+        <div class="product-row">
+          <div class="product-thumb">
+            <% if (it.image) { %>
+              <img src="<%= it.image %>" alt="<%= it.name %>">
+            <% } else { %>
+              <div class="muted">No image</div>
+            <% } %>
+          </div>
+          <div class="product-meta">
+            <div>
+              <div class="title"><%= it.name %></div>
+              <div class="muted">Số lượng: <%= it.quantity %></div>
+            </div>
+            <div style="text-align:right">
+              <div><%= fmtPrice(it.price) %></div>
+              <div style="font-weight:600"><%= fmtPrice(it.subtotal) %></div>
+            </div>
+          </div>
+        </div>
+      <% }) %>
+    </div>
+  </div>
+
+  <div class="panel" style="display:flex; gap:12px; align-items:flex-start; justify-content:space-between; flex-wrap:wrap">
+    <div style="flex:1; min-width:200px">
+      <% const cancellable = ['paid','processing','confirmed']; %>
+      <div class="order-actions">
+      <% if (cancellable.includes(order.status)) { %>
+        <button id="cancelBtn" class="btn btn-outline">Hủy đơn hàng</button>
+      <% } else if (order.status === 'delivered') { %>
+        <button id="cancelReqBtn" class="btn btn-outline">Yêu cầu hủy đơn (Đã giao)</button>
+      <% } %>
+      <a href="#" class="btn btn-outline" id="messageShop">Nhắn tin với shop</a>
+      </div>
+    </div>
+    <div class="totals-box">
+      <h4 style="margin:0 0 8px">Tổng cộng</h4>
+      <div class="row"><span>Tổng tiền hàng</span><strong><%= fmtPrice(order.total - (order.shipping_fee||0)) %></strong></div>
+      <div class="row"><span>Phí vận chuyển</span><strong><%= fmtPrice(order.shipping_fee || 0) %></strong></div>
+      <div class="row" style="font-size:16px"><span>Tổng</span><strong><%= fmtPrice(order.total) %></strong></div>
+    </div>
+  </div>
+</section>
+
+<!-- Cancel reason modal -->
+<div id="cancelModal" class="modal-backdrop">
+  <div class="modal">
+    <h4 style="margin:0 0 8px">Lý do hủy đơn</h4>
+    <p class="muted" style="margin:0 0 8px">Vui lòng mô tả lý do bạn muốn hủy đơn.</p>
+    <textarea id="cancelReason"></textarea>
+    <div style="margin-top:10px; display:flex; gap:8px; justify-content:flex-end">
+      <button id="cancelModalClose" class="btn btn-outline">Hủy</button>
+      <button id="cancelModalConfirm" class="btn btn-primary">Gửi yêu cầu hủy</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// Poll order status every 20s and show toast on change
+let currentStatus = '<%= order.status %>';
+function showToast(msg){ const t=document.createElement('div'); t.textContent=msg; t.style.position='fixed'; t.style.right='20px'; t.style.bottom='20px'; t.style.background='#111'; t.style.color='#fff'; t.style.padding='10px 12px'; t.style.borderRadius='6px'; t.style.zIndex=9999; document.body.appendChild(t); setTimeout(()=>{ t.style.transition='opacity .4s'; t.style.opacity=0; setTimeout(()=>t.remove(),400); },4000); }
+async function pollStatus(){ try{ const res = await fetch('/orders/<%= order.id %>/status', { credentials:'include' }); if (res.ok){ const j = await res.json(); if (j.status && j.status !== currentStatus){ currentStatus = j.status; const el = document.getElementById('orderStatus'); if (el) el.textContent = currentStatus; showToast('Trạng thái đơn hàng thay đổi: ' + currentStatus); } } }catch(e){} }
+setInterval(pollStatus, 20000);
+// Cancellation logic
+const cancelBtn = document.getElementById('cancelBtn');
+const cancelReqBtn = document.getElementById('cancelReqBtn');
+const cancelModal = document.getElementById('cancelModal');
+const cancelModalClose = document.getElementById('cancelModalClose');
+const cancelModalConfirm = document.getElementById('cancelModalConfirm');
+const cancelReasonEl = document.getElementById('cancelReason');
+
+async function doCancel(reason){
+  try{
+    const res = await fetch('/orders/<%= order.id %>/cancel', { method:'POST', headers:{'Content-Type':'application/json'}, credentials:'include', body: JSON.stringify({ reason }) });
+    const j = await res.json().catch(()=>null);
+    if (res.ok && j && j.ok){
+      currentStatus = 'cancelled';
+      showToast('Đã hủy đơn hàng');
+      // hide modal if open
+      if (cancelModal) cancelModal.style.display='none';
+      // show banner with reason and current time (server time isn't returned)
+      const banner = document.getElementById('cancelBanner');
+      const reasonEl = document.getElementById('cancelBannerReason');
+      const timeEl = document.getElementById('cancelBannerTime');
+      if (banner){ banner.classList.remove('hide'); banner.classList.add('show'); }
+      if (reasonEl){ reasonEl.innerHTML = reason ? '<div style="margin-top:6px">Lý do: '+escapeHtml(reason)+'</div>' : ''; }
+      if (timeEl){ const now = new Date(); timeEl.innerHTML = '<div style="margin-top:6px; font-size:13px; color:var(--muted)">Thời gian: '+ now.toLocaleString() +'</div>'; }
+      return;
+    }
+    if (j && j.error==='reason_required') { showToast('Vui lòng nhập lý do hủy'); return; }
+    if (j && j.error==='cannot_cancel') { showToast('Không thể hủy đơn ở trạng thái hiện tại'); return; }
+    showToast('Không thể hủy đơn');
+  }catch(e){ showToast('Lỗi mạng'); }
+}
+if (cancelBtn){ cancelBtn.addEventListener('click', async ()=>{ if (cancelModal) cancelModal.style.display='flex'; }); }
+if (cancelReqBtn){ cancelReqBtn.addEventListener('click', ()=>{ if (cancelModal) cancelModal.style.display='flex'; }); }
+if (cancelModalClose){ cancelModalClose.addEventListener('click', ()=>{ if (cancelModal) cancelModal.style.display='none'; }); }
+if (cancelModalConfirm){ cancelModalConfirm.addEventListener('click', async ()=>{ const reason = (cancelReasonEl && cancelReasonEl.value) ? String(cancelReasonEl.value).trim() : ''; if (!reason){ showToast('Vui lòng nhập lý do'); return; } await doCancel(reason); }); }
+</script>

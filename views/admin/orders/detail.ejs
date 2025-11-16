@@ -1,0 +1,52 @@
+<% layout('layout') -%>
+
+<header class="page-head">
+  <div class="page-head__row">
+    <h2>Đơn hàng #<%= order.id %></h2>
+    <a class="btn btn-outline" href="/admin/orders">← Quay lại danh sách</a>
+  </div>
+  <div class="page-head__row" style="margin-top:12px">
+    <div>
+      <div><strong>Khách hàng:</strong> <%= order.customer || 'N/A' %></div>
+      <div><strong>Email:</strong> <%= order.email || 'N/A' %></div>
+      <div><strong>Ngày tạo:</strong> <%= new Date(order.created_at).toLocaleString() %></div>
+    </div>
+    <div style="display:flex; gap:12px; align-items:center">
+      <div><strong>Tổng:</strong> <%= fmtPriceBoth(order.total) %></div>
+      <form method="POST" action="/admin/orders/<%= order.id %>/status" style="display:flex; gap:8px; align-items:center">
+        <label for="status" style="opacity:.8">Trạng thái</label>
+        <select class="select" id="status" name="status">
+          <% const statuses = ['pending','paid','processing','shipped','cancelled','refunded']; %>
+          <% statuses.forEach(s => { %>
+            <option value="<%= s %>" <%= (order.status||'').toLowerCase()===s?'selected':'' %>><%= s %></option>
+          <% }) %>
+        </select>
+        <button class="btn btn-outline" type="submit">Cập nhật</button>
+      </form>
+    </div>
+  </div>
+</header>
+
+<section class="section">
+  <h3 style="margin: 0 0 12px">Sản phẩm</h3>
+  <% if (!items.length) { %>
+    <p>Đơn hàng không có sản phẩm.</p>
+  <% } else { %>
+    <table>
+      <tr>
+        <th>Tên sản phẩm</th>
+        <th width="120">Giá</th>
+        <th width="120">Số lượng</th>
+        <th width="120">Tạm tính</th>
+      </tr>
+      <% items.forEach(it => { %>
+        <tr>
+          <td><%= it.name || ('#'+it.product_id) %></td>
+          <td><%= fmtPriceBoth(it.price) %></td>
+          <td><%= it.quantity %></td>
+          <td><%= fmtPriceBoth(Number(it.price) * Number(it.quantity)) %></td>
+        </tr>
+      <% }) %>
+    </table>
+  <% } %>
+</section>

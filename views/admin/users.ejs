@@ -1,0 +1,45 @@
+<% layout('layout') -%>
+<section class="section">
+  <div class="section__head">
+    <h2>Quản lý người dùng</h2>
+    <div class="page-head__actions">
+      <a href="/admin" class="btn btn-outline">Quay lại</a>
+    </div>
+  </div>
+
+  <div class="card" style="padding:12px">
+    <% if (!users || !users.length) { %>
+      <div class="muted">Không tìm thấy bảng `users` hoặc không có người dùng.</div>
+    <% } else { %>
+      <table>
+        <thead>
+          <tr><th>ID</th><th>Tên</th><th>Email</th><th>Role</th><th>Ngày tạo</th><th></th></tr>
+        </thead>
+        <tbody>
+          <% users.forEach(function(u){ %>
+            <tr>
+              <td><%= u.id %></td>
+              <td><%= u.name %></td>
+              <td><%= u.email %></td>
+              <td><%= u.role || 'user' %></td>
+              <td><%= (u.created_at) ? new Date(u.created_at).toLocaleString() : '-' %></td>
+              <td style="white-space:nowrap">
+                <a class="btn btn-outline" href="/admin/users/<%= u.id %>">Xem</a>
+                <button class="btn btn-danger admin-delete" data-id="<%= u.id %>">Xóa</button>
+              </td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    <% } %>
+  </div>
+</section>
+
+<script>
+document.querySelectorAll('.admin-delete').forEach(btn => btn.addEventListener('click', async function(){
+  if (!confirm('Xóa người dùng này?')) return;
+  const id = this.dataset.id;
+  const res = await fetch('/admin/users/'+id+'/delete', { method:'POST', credentials:'include' });
+  if (res.ok) location.reload(); else alert('Xóa thất bại');
+}));
+</script>

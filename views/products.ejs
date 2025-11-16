@@ -1,0 +1,121 @@
+<% layout('layout') -%>
+
+<header class="page-head">
+  <div class="page-head__row">
+    <h2>Danh sách sản phẩm</h2>
+    <div class="page-head__actions">
+      <% if (user && user.role === 'admin') { %>
+        <a class="btn btn-primary" href="/products/add">Thêm sản phẩm</a>
+      <% } %>
+    </div>
+  </div>
+  <form class="toolbar" method="GET" action="/products">
+    <div class="toolbar__group">
+      <input class="input" type="text" name="q" placeholder="Tìm sản phẩm..." value="<%= q || '' %>">
+      <select class="select" name="sort">
+        <option value="newest" <%= sort === 'newest' ? 'selected' : '' %>>Mới nhất</option>
+        <option value="price_asc" <%= sort === 'price_asc' ? 'selected' : '' %>>Giá tăng dần</option>
+        <option value="price_desc" <%= sort === 'price_desc' ? 'selected' : '' %>>Giá giảm dần</option>
+      </select>
+      <button class="btn btn-primary" type="submit">Lọc</button>
+      <% if ((q && q.length) || (sort && sort !== 'newest')) { %>
+        <a class="btn btn-outline" href="/products">Xóa lọc</a>
+      <% } %>
+    </div>
+  </form>
+</header>
+
+<section class="section">
+  <% if (!products || !products.length) { %>
+    <p>Chưa có sản phẩm nào.</p>
+  <% } else { %>
+    <p class="muted">Tìm thấy <strong><%= products.length %></strong> sản phẩm.</p>
+    <div class="grid grid-4">
+      <% products.forEach(p => { %>
+        <article class="card product-card" style="position:relative">
+          <a class="card__overlay-link" href="/products/<%= p.id %>" aria-label="Xem chi tiết"></a>
+          <a class="product-card__thumb" href="/products/<%= p.id %>">
+            <% if (p.image) { %>
+              <img src="<%= p.image %>" alt="<%= p.name %>">
+            <% } else { %>
+              <div style="height:180px; display:flex; align-items:center; justify-content:center; font-size:12px; color:var(--muted)">No image</div>
+            <% } %>
+            <% if ((p.stock||0) <= 0) { %>
+              <span class="badge badge--out">Hết hàng</span>
+            <% } else if ((p.stock||0) < 5) { %>
+              <span class="badge badge--low">Còn <%= p.stock %></span>
+            <% } %>
+          </a>
+          <div class="product-card__body">
+            <h3 class="product-card__title"><a href="/products/<%= p.id %>"><%= p.name %></a></h3>
+            <p class="product-card__desc"><%= (p.description||'').slice(0, 80) %></p>
+            <div class="product-card__footer">
+              <span class="product-card__price"><%= fmtPrice(p.price) %></span>
+              <div class="product-card__actions">
+                <% if ((p.stock || 0) > 0) { %>
+                  <button class="btn btn-primary js-add" data-id="<%= p.id %>">Thêm vào giỏ</button>
+                <% } else { %>
+                  <span class="muted">Hết hàng</span>
+                <% } %>
+              </div>
+            </div>
+          </div>
+        </article>
+      <% }) %>
+    </div>
+    
+    <% if (totalPages > 1) { %>
+      <div class="section" style="padding-top:12px">
+        <nav class="pagination">
+          <% const baseQS = new URLSearchParams(); if (q) baseQS.set('q', q); if (sort) baseQS.set('sort', sort); %>
+          <a class="btn btn-outline" href="/products?<%= (new URLSearchParams({ ...Object.fromEntries(baseQS), page: Math.max(1, page-1) })).toString() %>" <%= page<=1 ? 'aria-disabled="true" style="opacity:.5; pointer-events:none"' : '' %>>« Trước</a>
+          <span class="muted" style="margin:0 12px">Trang <strong><%= page %></strong>/<%= totalPages %></span>
+          <a class="btn btn-outline" href="/products?<%= (new URLSearchParams({ ...Object.fromEntries(baseQS), page: Math.min(totalPages, page+1) })).toString() %>" <%= page>=totalPages ? 'aria-disabled="true" style="opacity:.5; pointer-events:none"' : '' %>>Sau »</a>
+        </nav>
+      </div>
+    <% } %>
+  <% } %>
+</section>
+
+<div id="prodToast" class="toast" aria-live="polite"></div>
+
+<script>
+document.addEventListener('click', async (e) => {
+  const btn = e.target.closest('.js-add');
+  if (!btn) return;
+  e.preventDefault();
+  const id = btn.getAttribute('data-id');
+  try {
+    btn.disabled = true; const prev = btn.textContent; btn.textContent = 'Đang thêm...';
+    const res = await fetch(`/cart/add/${id}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept':'application/json' },
+      body: JSON.stringify({ quantity: 1 }),
+      credentials: 'include'
+    });
+    if (res.redirected || res.status === 401) { window.location = '/login'; return; }
+    const j = await res.json().catch(()=>null);
+    if (j && j.ok) showToast('Đã thêm vào giỏ');
+    else if (j && j.error) showToast(j.error);
+    else if (!res.ok) showToast('Lỗi ' + res.status);
+    else showToast('Đã gửi yêu cầu');
+    btn.textContent = prev; btn.disabled = false;
+  } catch(err) {
+    btn.disabled = false; showToast('Lỗi mạng');
+  }
+});
+function showToast(msg){
+  const t = document.getElementById('prodToast');
+  t.textContent = msg; t.classList.add('toast','toast--show');
+  setTimeout(()=> t.classList.remove('toast--show'), 2500);
+}
+</script>
+
+<style>
+.badge{position:absolute; top:10px; left:10px; font-size:12px; padding:4px 8px; border-radius:999px; border:1px solid var(--border); background:#0b1220}
+.badge--low{background:#3f1d06; color:#fdba74}
+.badge--out{background:#450a0a; color:#fecaca}
+.card__overlay-link{position:absolute; inset:0; z-index:1}
+.product-card__actions{position:relative; z-index:2}
+.pagination{display:flex; align-items:center; justify-content:center; gap:8px}
+</style>

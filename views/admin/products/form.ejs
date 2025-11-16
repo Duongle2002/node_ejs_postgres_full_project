@@ -1,0 +1,62 @@
+<% layout('layout') -%>
+
+<header class="page-head">
+  <div class="page-head__row">
+    <h2><%= product ? 'Sửa sản phẩm' : 'Thêm sản phẩm' %></h2>
+    <a href="/admin/products" class="btn btn-outline">Quay lại</a>
+  </div>
+</header>
+
+<section class="section">
+  <form method="POST" action="<%= action %>" class="form-grid">
+    <% if (typeof errors !== 'undefined' && errors.length) { %>
+      <div style="grid-column:1/-1; background:#3b1a1a; border:1px solid #802c2c; padding:12px; border-radius:6px; color:#ffb4b4">
+        <ul style="margin:0; padding-left:22px">
+          <% errors.forEach(e => { %><li><%= e %></li><% }) %>
+        </ul>
+      </div>
+    <% } %>
+    <div class="form-field">
+      <label>Tên</label>
+      <input class="input" name="name" required value="<%= product ? product.name : '' %>">
+    </div>
+    <div class="form-field">
+      <label>Giá cơ sở (USD)</label>
+      <input class="input" name="price" id="priceInput" type="number" min="0" step="0.01" required value="<%= product ? product.price : '' %>">
+      <div style="font-size:12px; margin-top:4px; color:var(--muted)">Hiển thị cho khách: <strong id="pricePreview"><%= fmtPriceBoth(product ? product.price : 0) %></strong></div>
+    </div>
+    <div class="form-field">
+      <label>Tồn kho</label>
+      <input class="input" name="stock" type="number" min="0" step="1" required value="<%= product ? (product.stock || 0) : 0 %>">
+    </div>
+    <div class="form-field">
+      <label>Ảnh (URL)</label>
+      <input class="input" name="image" value="<%= product ? (product.image || '') : '' %>">
+    </div>
+    <div class="form-field" style="grid-column:1/-1">
+      <label>Mô tả</label>
+      <textarea class="input" name="description" rows="5"><%= product ? (product.description || '') : '' %></textarea>
+    </div>
+    <div style="grid-column:1/-1; display:flex; gap:8px; justify-content:flex-end">
+      <button class="btn btn-outline" type="reset">Hủy</button>
+      <button class="btn btn-primary" type="submit"><%= product ? 'Cập nhật' : 'Tạo mới' %></button>
+    </div>
+  </form>
+</section>
+
+<style>
+.form-grid{max-width:800px; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px}
+.form-field label{display:block; margin-bottom:6px; color:var(--muted)}
+.form-field .input{width:100%}
+</style>
+
+<script>
+(function(){
+  const rate = Number('<%= usdToVnd %>'); // USD -> VND
+  const inp = document.getElementById('priceInput');
+  const prev = document.getElementById('pricePreview');
+  function fmt(n){ n = Number(n)||0; const v = Math.round(n*rate).toLocaleString('vi-VN')+'₫'; return v + ' (≈$' + n.toFixed(2) + ')'; }
+  function update(){ if(prev && inp) prev.textContent = fmt(inp.value); }
+  if(inp){ inp.addEventListener('input', update); update(); }
+})();
+</script>

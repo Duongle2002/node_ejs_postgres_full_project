@@ -1,0 +1,37 @@
+<% layout('layout') -%>
+<section class="section">
+  <div class="section__head">
+    <h2>Chi tiết người dùng</h2>
+    <div class="page-head__actions">
+      <a href="/admin/users" class="btn btn-outline">Quay lại</a>
+    </div>
+  </div>
+  <div class="card" style="padding:12px">
+    <form id="userEdit">
+      <div class="auth-field"><label>Tên</label><input name="name" class="input" value="<%= u.name %>"></div>
+      <div class="auth-field"><label>Email</label><input name="email" class="input" value="<%= u.email %>"></div>
+      <div class="auth-field"><label>Role</label>
+        <select name="role" class="select">
+          <option value="user" <%= (u.role==='user')? 'selected' : '' %>>user</option>
+          <option value="admin" <%= (u.role==='admin')? 'selected' : '' %>>admin</option>
+        </select>
+      </div>
+      <div style="display:flex; gap:8px; justify-content:flex-end">
+        <button type="button" class="btn btn-outline" id="cancelBtn">Hủy</button>
+        <button type="submit" class="btn btn-primary">Lưu</button>
+      </div>
+    </form>
+  </div>
+</section>
+
+<script>
+document.getElementById('userEdit')?.addEventListener('submit', async function(e){
+  e.preventDefault();
+  const data = new FormData(this);
+  const body = { name: data.get('name'), email: data.get('email'), role: data.get('role') };
+  const res = await fetch(location.pathname, { method:'POST', credentials:'include', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+  if (res.ok) { alert('Cập nhật thành công'); location.href='/admin/users'; } else { alert('Thất bại'); }
+});
+
+document.getElementById('cancelBtn')?.addEventListener('click', ()=> location.href='/admin/users');
+</script>

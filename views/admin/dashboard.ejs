@@ -1,0 +1,164 @@
+<% layout('layout') -%>
+
+<header class="page-head">
+  <div class="page-head__row" style="flex-wrap:wrap; gap:12px">
+    <h2 style="margin:0">Bảng điều khiển</h2>
+    <nav style="display:flex; gap:8px; flex-wrap:wrap; align-items:center">
+      <a class="btn btn-outline" href="/admin">7 ngày gần đây</a>
+      <a class="btn btn-outline" href="/admin?from=<%= new Date(new Date().getFullYear(), new Date().getMonth(),1).toISOString().slice(0,10) %>&to=<%= new Date().toISOString().slice(0,10) %>">Tháng này</a>
+      <a class="btn btn-outline" href="/admin?from=<%= new Date(new Date().getFullYear(),0,1).toISOString().slice(0,10) %>&to=<%= new Date().toISOString().slice(0,10) %>">Năm nay</a>
+      <form method="GET" action="/admin" style="display:flex; gap:6px; align-items:center">
+        <input class="input" type="date" name="from" value="<%= stats.range_from || '' %>" required>
+        <input class="input" type="date" name="to" value="<%= stats.range_to || '' %>" required>
+        <button class="btn btn-primary" type="submit">Lọc</button>
+        <% if (stats.range_from && stats.range_to) { %><a class="btn btn-outline" href="/admin">Xóa</a><% } %>
+      </form>
+      <a class="btn btn-outline" href="/admin/stats.csv<%= (stats.range_from && stats.range_to)?('?from='+stats.range_from+'&to='+stats.range_to):'' %>">Export CSV</a>
+    </nav>
+  </div>
+</header>
+
+<section class="section" style="display:grid; gap:20px">
+  <div class="grid grid-4">
+    <div class="card kpi">
+      <h3>Sản phẩm</h3>
+      <p class="kpi__value"><%= stats.products %></p>
+      <a class="btn btn-outline" href="/admin/products">Quản lý sản phẩm</a>
+    </div>
+    <div class="card kpi">
+      <h3>Người dùng</h3>
+      <p class="kpi__value"><%= stats.users %></p>
+    </div>
+    <div class="card kpi">
+      <h3>Đơn hàng</h3>
+      <p class="kpi__value"><%= stats.orders %></p>
+      <a class="btn btn-outline" href="/admin/orders">Quản lý đơn hàng</a>
+    </div>
+    <div class="card kpi">
+      <h3>Doanh thu <%= (stats.range_from && stats.range_to)?'(khoảng)':'(7 ngày gần đây)' %></h3>
+      <p class="kpi__value"><%= fmtPrice(stats.revenue_total) %></p>
+      <% const dailyAvg = (stats.daily && stats.daily.length) ? (stats.revenue_total / stats.daily.length) : 0; %>
+      <div class="muted" style="font-size:12px">Số ngày: <strong><%= (stats.daily||[]).length %></strong><br>Trung bình/ngày: <strong><%= fmtPrice(dailyAvg) %></strong></div>
+    </div>
+  </div>
+
+  <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(320px,1fr)); gap:20px">
+    <div class="card" style="padding:16px; display:flex; flex-direction:column; gap:12px">
+      <h3 style="margin:0">Doanh thu theo ngày</h3>
+      <canvas id="revChart" height="160" style="background:#0f172a; border:1px solid var(--border); border-radius:8px"></canvas>
+      <div class="muted" style="font-size:11px">USD gốc (hiển thị chuyển đổi tuỳ chọn)</div>
+    </div>
+    <div class="card" style="padding:16px; display:flex; flex-direction:column; gap:12px">
+      <h3 style="margin:0">Đơn hàng theo ngày</h3>
+      <canvas id="ordersChart" height="160" style="background:#0f172a; border:1px solid var(--border); border-radius:8px"></canvas>
+      <div class="muted" style="font-size:11px">Không tính đơn cancelled</div>
+    </div>
+    <div class="card" style="padding:16px; display:flex; flex-direction:column; gap:12px">
+      <h3 style="margin:0">Trạng thái đơn (tổng)</h3>
+      <table class="mini-table">
+        <tr><th>Trạng thái</th><th>Số lượng</th></tr>
+        <% Object.keys(stats.status_counts).sort().forEach(s => { %>
+          <tr><td><%= s %></td><td><%= stats.status_counts[s] %></td></tr>
+        <% }) %>
+      </table>
+    </div>
+    <div class="card" style="padding:16px; display:flex; flex-direction:column; gap:12px">
+      <h3 style="margin:0">Top sản phẩm (30 ngày)</h3>
+      <% if (!stats.top_products.length) { %><p class="muted" style="margin:0">Chưa có dữ liệu.</p><% } else { %>
+        <table class="mini-table">
+          <tr><th>Tên</th><th>SL</th></tr>
+          <% stats.top_products.forEach(tp => { %>
+            <tr><td><%= tp.name %></td><td><%= tp.qty %></td></tr>
+          <% }) %>
+        </table>
+      <% } %>
+    </div>
+    <div class="card" style="padding:16px; display:flex; flex-direction:column; gap:12px">
+      <h3 style="margin:0">Tồn kho thấp (&lt;5)</h3>
+      <% if (!stats.low_stock.length) { %><p class="muted" style="margin:0">Không có sản phẩm sắp hết.</p><% } else { %>
+        <table class="mini-table">
+          <tr><th>Tên</th><th>Tồn</th></tr>
+          <% stats.low_stock.forEach(ls => { %>
+            <tr><td><%= ls.name %></td><td><%= ls.stock %></td></tr>
+          <% }) %>
+        </table>
+      <% } %>
+    </div>
+  </div>
+</section>
+
+<script>
+(function(){
+  const data = JSON.parse('<%- JSON.stringify(stats.daily||[]) %>');
+  const canvas = document.getElementById('revChart');
+  if (!canvas || !data.length) return;
+  const ctx = canvas.getContext('2d');
+  const padding = 24;
+  const w = canvas.width = canvas.clientWidth; // ensure width sync
+  const h = canvas.height;
+  const values = data.map(d => Number(d.revenue)||0);
+  const max = Math.max(...values, 1);
+  const xStep = (w - padding*2) / Math.max(values.length-1,1);
+  ctx.lineWidth = 1;
+  ctx.strokeStyle = '#334155';
+  ctx.fillStyle = '#94a3b8';
+  ctx.font = '11px system-ui';
+  // axes
+  ctx.beginPath();
+  ctx.moveTo(padding, padding/2);
+  ctx.lineTo(padding, h - padding);
+  ctx.lineTo(w - padding/2, h - padding);
+  ctx.stroke();
+  // y labels (3 steps)
+  for (let i=0;i<=3;i++){
+    const v = max * (i/3);
+    const y = (h - padding) - ( (h - padding*2) * (i/3) );
+    ctx.fillText(v.toFixed(0), 4, y+4);
+    ctx.strokeStyle = '#1e293b'; ctx.beginPath(); ctx.moveTo(padding, y); ctx.lineTo(w - padding/2, y); ctx.stroke();
+  }
+  // line
+  ctx.strokeStyle = '#10b981';
+  ctx.beginPath();
+  data.forEach((d,i) => {
+    const x = padding + xStep * i;
+    const y = (h - padding) - ( (h - padding*2) * (values[i]/max) );
+    if (i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+  });
+  ctx.stroke();
+  // points & labels
+  ctx.fillStyle = '#10b981';
+  data.forEach((d,i) => {
+    const x = padding + xStep * i;
+    const y = (h - padding) - ( (h - padding*2) * (values[i]/max) );
+    ctx.beginPath(); ctx.arc(x,y,3,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#94a3b8'; ctx.fillText(String(d.day).slice(5), x-12, h-6); ctx.fillStyle = '#10b981';
+  });
+})();
+
+(function(){
+  const data = JSON.parse('<%- JSON.stringify(stats.daily||[]) %>');
+  const canvas = document.getElementById('ordersChart');
+  if (!canvas || !data.length) return;
+  const ctx = canvas.getContext('2d');
+  const padding = 24;
+  const w = canvas.width = canvas.clientWidth;
+  const h = canvas.height;
+  const values = data.map(d => Number(d.orders)||0);
+  const max = Math.max(...values, 1);
+  const xStep = (w - padding*2) / Math.max(values.length-1,1);
+  ctx.lineWidth = 1; ctx.strokeStyle = '#334155'; ctx.fillStyle = '#94a3b8'; ctx.font='11px system-ui';
+  ctx.beginPath(); ctx.moveTo(padding,padding/2); ctx.lineTo(padding,h-padding); ctx.lineTo(w-padding/2,h-padding); ctx.stroke();
+  for(let i=0;i<=3;i++){ const v=max*(i/3); const y=(h-padding)-((h-padding*2)*(i/3)); ctx.fillText(Math.round(v),4,y+4); ctx.strokeStyle='#1e293b'; ctx.beginPath(); ctx.moveTo(padding,y); ctx.lineTo(w-padding/2,y); ctx.stroke(); }
+  ctx.strokeStyle='#6366f1'; ctx.beginPath(); data.forEach((d,i)=>{ const x=padding+xStep*i; const y=(h-padding)-((h-padding*2)*(values[i]/max)); if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y); }); ctx.stroke();
+  ctx.fillStyle='#6366f1'; data.forEach((d,i)=>{ const x=padding+xStep*i; const y=(h-padding)-((h-padding*2)*(values[i]/max)); ctx.beginPath(); ctx.arc(x,y,3,0,Math.PI*2); ctx.fill(); ctx.fillStyle='#94a3b8'; ctx.fillText(String(d.day).slice(5), x-12, h-6); ctx.fillStyle='#6366f1'; });
+})();
+</script>
+
+<style>
+.kpi{padding:16px}
+.kpi__value{font-size:28px; font-weight:700; margin:4px 0 8px}
+.mini-table{width:100%; border-collapse:collapse; font-size:12px}
+.mini-table th,.mini-table td{border:1px solid var(--border); padding:4px 6px; text-align:left}
+.mini-table th{background:#0f172a}
+@media (max-width:900px){#revChart{height:140px}}
+</style>

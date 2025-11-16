@@ -1,0 +1,128 @@
+<% layout('layout') -%>
+<section class="section">
+  <div class="section__head">
+    <h2>Tài khoản</h2>
+    <div class="page-head__actions">
+      <a href="/products" class="btn btn-outline">Tiếp tục mua sắm</a>
+    </div>
+  </div>
+
+  <div class="grid" style="grid-template-columns:1fr 360px; gap:20px; align-items:start">
+    <div>
+      <div class="card" style="padding:16px; margin-bottom:12px">
+        <h3>Hồ sơ</h3>
+        <form id="profileForm">
+          <div class="auth-field">
+            <label>Họ và tên</label>
+            <input name="name" class="input" value="<%= userProfile.name || '' %>">
+          </div>
+          <div class="auth-field">
+            <label>Email</label>
+            <input name="email" class="input" value="<%= userProfile.email || '' %>">
+          </div>
+          <div style="display:flex; gap:8px; justify-content:flex-end">
+            <button class="btn btn-outline" type="button" id="profileCancel">Hủy</button>
+            <button class="btn btn-primary" type="submit">Lưu</button>
+          </div>
+        </form>
+      </div>
+
+      <div class="card" style="padding:16px; margin-bottom:12px">
+        <h3>Địa chỉ</h3>
+        <div id="addresses">
+          <% if (!addresses || !addresses.length) { %>
+            <div class="muted">Chưa có địa chỉ nào.</div>
+          <% } else { %>
+            <% addresses.forEach(function(a){ %>
+              <div style="display:flex; justify-content:space-between; gap:8px; padding:8px 0; border-bottom:1px solid var(--border)">
+                <div>
+                  <div style="font-weight:700"><%= a.full_name %> <% if (a.is_default){ %><small class="muted">(Mặc định)</small><% } %></div>
+                  <div class="muted" style="font-size:13px"><%= a.line1 %><% if (a.line2){ %>, <%= a.line2 %><% } %>, <%= a.city %></div>
+                  <div class="muted" style="font-size:13px">Số điện thoại: <%= a.phone %></div>
+                </div>
+                <div style="display:flex; flex-direction:column; gap:6px; align-items:flex-end">
+                  <% if (!a.is_default) { %>
+                    <button class="btn btn-outline set-default" data-id="<%= a.id %>">Đặt mặc định</button>
+                  <% } %>
+                  <button class="btn btn-danger delete-address" data-id="<%= a.id %>">Xóa</button>
+                </div>
+              </div>
+            <% }) %>
+          <% } %>
+        </div>
+
+        <hr style="margin:12px 0">
+        <h4>Thêm địa chỉ mới</h4>
+        <form id="addressForm">
+          <div class="auth-field"><label>Họ và tên</label><input name="full_name" class="input" required></div>
+          <div class="auth-field"><label>Số điện thoại</label><input name="phone" class="input"></div>
+          <div class="auth-field"><label>Địa chỉ (line1)</label><input name="line1" class="input" required></div>
+          <div class="auth-field"><label>Địa chỉ (line2)</label><input name="line2" class="input"></div>
+          <div class="auth-field"><label>Thành phố</label><input name="city" class="input"></div>
+          <div class="auth-field" style="display:flex; gap:8px"><input name="postal_code" class="input" placeholder="Mã bưu chính"><input name="country" class="input" placeholder="Quốc gia"></div>
+          <div style="display:flex; gap:8px; justify-content:flex-end; margin-top:8px">
+            <label style="display:flex; align-items:center; gap:8px"><input type="checkbox" name="is_default"> Đặt mặc định</label>
+            <button class="btn btn-primary" type="submit">Thêm địa chỉ</button>
+          </div>
+        </form>
+      </div>
+
+    </div>
+
+    <aside>
+      <div class="card" style="padding:16px; margin-bottom:12px">
+        <h3>Lịch sử đơn hàng</h3>
+        <% if (!orders || !orders.length) { %>
+          <div class="muted">Bạn chưa có đơn hàng.</div>
+        <% } else { %>
+          <% orders.forEach(function(o){ %>
+            <div style="display:flex; justify-content:space-between; gap:8px; padding:8px 0; border-bottom:1px solid var(--border)">
+              <div>
+                <div><strong>#<%= o.id %></strong></div>
+                <div class="muted" style="font-size:13px"><%= new Date(o.created_at).toLocaleString() %></div>
+              </div>
+              <div style="text-align:right">
+                <div><%= fmtPrice(o.total) %></div>
+                <div class="order-status-badge <%= o.status %>" style="margin-top:6px"><%= o.status %></div>
+                <div style="margin-top:6px"><a class="btn btn-outline" href="/orders/<%= o.id %>">Xem</a></div>
+              </div>
+            </div>
+          <% }) %>
+        <% } %>
+      </div>
+    </aside>
+  </div>
+</section>
+
+<script>
+document.getElementById('profileForm')?.addEventListener('submit', async function(e){
+  e.preventDefault();
+  const data = new FormData(this);
+  const body = { name: data.get('name'), email: data.get('email') };
+  const res = await fetch('/user/profile', { method:'POST', credentials:'include', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+  if (res.ok) { alert('Lưu thành công'); location.reload(); } else { alert('Lưu thất bại'); }
+});
+
+document.getElementById('addressForm')?.addEventListener('submit', async function(e){
+  e.preventDefault();
+  const data = new FormData(this);
+  const body = {
+    full_name: data.get('full_name'), phone: data.get('phone'), line1: data.get('line1'), line2: data.get('line2'), city: data.get('city'), postal_code: data.get('postal_code'), country: data.get('country'), is_default: this.elements['is_default'].checked
+  };
+  const res = await fetch('/user/address', { method:'POST', credentials:'include', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+  if (res.ok) { alert('Đã thêm'); location.reload(); } else { alert('Thất bại'); }
+});
+
+document.querySelectorAll('.delete-address').forEach(btn => btn.addEventListener('click', async function(){
+  if (!confirm('Bạn có chắc muốn xóa địa chỉ này?')) return;
+  const id = this.dataset.id;
+  const res = await fetch('/user/address/'+id+'/delete', { method:'POST', credentials:'include' });
+  if (res.ok) location.reload(); else alert('Thất bại');
+}));
+
+document.querySelectorAll('.set-default').forEach(btn => btn.addEventListener('click', async function(){
+  const id = this.dataset.id;
+  const res = await fetch('/user/address/'+id+'/default', { method:'POST', credentials:'include' });
+  if (res.ok) location.reload(); else alert('Thất bại');
+}));
+</script>

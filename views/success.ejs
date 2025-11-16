@@ -1,0 +1,13 @@
+<% layout('layout') -%>
+<section class="section order-detail">
+  <div class="panel">
+    <h2>Thanh toán thành công</h2>
+    <p class="muted">Đơn hàng của bạn đã được ghi nhận. Cảm ơn bạn đã mua sắm!</p>
+    <div style="margin-top:12px" class="order-actions">
+      <a class="btn btn-primary" href="/products">Tiếp tục mua sắm</a>
+      <% if (order) { %>
+        <a class="btn btn-outline" href="/orders/<%= order.id %>">Xem đơn hàng</a>
+      <% } %>
+    </div>
+  </div>
+</section>

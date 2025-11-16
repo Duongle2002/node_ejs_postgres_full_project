@@ -1,0 +1,30 @@
+<% layout('layout') -%>
+<section class="section order-list">
+  <div class="section__head">
+    <h2>Lịch sử đơn hàng</h2>
+    <div class="page-head__actions">
+      <a class="btn btn-outline" href="/products">Tiếp tục mua sắm</a>
+    </div>
+  </div>
+  <% if (!orders || !orders.length) { %>
+    <div class="card" style="padding:20px">Bạn chưa có đơn hàng nào.</div>
+  <% } else { %>
+    <% orders.forEach(function(o){ %>
+      <div class="order-item card">
+        <div class="order-item__meta">
+          <div>
+            <div class="order-item__id">Đơn #<%= o.id %></div>
+            <div class="order-item__date"><%= new Date(o.created_at).toLocaleString() %></div>
+          </div>
+        </div>
+        <div style="display:flex; align-items:center; gap:12px">
+          <div class="order-item__total"><%= (typeof fmtPrice === 'function') ? fmtPrice(o.total) : o.total %></div>
+          <div class="order-status-badge <%= o.status %>"><%= o.status %></div>
+          <div class="order-actions">
+            <a class="btn btn-outline" href="/orders/<%= o.id %>">Xem chi tiết</a>
+          </div>
+        </div>
+      </div>
+    <% }) %>
+  <% } %>
+</section>

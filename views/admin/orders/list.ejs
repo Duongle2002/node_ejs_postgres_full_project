@@ -1,0 +1,46 @@
+<% layout('layout') -%>
+
+<header class="page-head">
+  <div class="page-head__row">
+    <h2>Đơn hàng</h2>
+  </div>
+</header>
+
+<section class="section">
+  <% if (!orders.length) { %>
+    <p>Chưa có đơn hàng.</p>
+  <% } else { %>
+    <table>
+      <tr>
+        <th width="80">ID</th>
+        <th>Khách hàng</th>
+        <th width="120">Tổng</th>
+        <th width="140">Trạng thái</th>
+        <th width="180">Ngày tạo</th>
+        <th width="220"></th>
+      </tr>
+      <% orders.forEach(o => { %>
+        <tr>
+          <td><%= o.id %></td>
+          <td><%= o.customer || 'N/A' %></td>
+          <td><%= fmtPriceBoth(o.total) %></td>
+          <td>
+            <form method="POST" action="/admin/orders/<%= o.id %>/status" style="display:flex; gap:8px; align-items:center">
+              <select class="select" name="status">
+                <% const statuses = ['pending','paid','processing','shipped','cancelled','refunded']; %>
+                <% statuses.forEach(s => { %>
+                  <option value="<%= s %>" <%= (o.status||'').toLowerCase()===s?'selected':'' %>><%= s %></option>
+                <% }) %>
+              </select>
+              <button class="btn btn-outline" type="submit">Lưu</button>
+            </form>
+          </td>
+          <td><%= new Date(o.created_at).toLocaleString() %></td>
+          <td>
+            <a class="btn btn-outline" href="/admin/orders/<%= o.id %>">Chi tiết</a>
+          </td>
+        </tr>
+      <% }) %>
+    </table>
+  <% } %>
+</section>

@@ -1,0 +1,330 @@
+<% layout('layout') -%>
+
+<header class="page-head">
+  <div class="page-head__row">
+    <h2>Thanh toán</h2>
+    <a class="btn btn-outline" href="/cart">← Quay lại giỏ hàng</a>
+  </div>
+</header>
+
+<section class="section">
+  <% if (!items || !items.length) { %>
+    <p>Giỏ hàng của bạn đang trống. <a class="link" href="/products">Tiếp tục mua sắm</a>.</p>
+  <% } else { %>
+  <div class="checkout-grid" style="display:grid; gap:20px; grid-template-columns: minmax(0,1fr) 380px; align-items:start">
+    <!-- Column 1: Items + Shipping -->
+    <div class="checkout-col">
+      <div class="card" style="padding:16px;">
+        <h3 style="margin:0 0 12px">Sản phẩm</h3>
+        <div style="display:flex; flex-direction:column; gap:12px">
+          <% items.forEach(it => { %>
+            <div style="display:flex; gap:12px; border:1px solid var(--border); border-radius:8px; padding:10px; align-items:flex-start">
+              <div style="width:70px; flex-shrink:0">
+                <% if (it.image) { %>
+                  <img src="<%= it.image %>" alt="<%= it.name %>" style="width:70px; height:70px; object-fit:cover; border-radius:6px; background:#222" />
+                <% } else { %>
+                  <div style="width:70px; height:70px; display:flex; align-items:center; justify-content:center; font-size:12px; background:#222; color:#888; border-radius:6px">No image</div>
+                <% } %>
+              </div>
+              <div style="flex:1; display:flex; flex-direction:column; gap:4px">
+                <div style="display:flex; justify-content:space-between; gap:8px">
+                  <strong><%= it.name %></strong>
+                  <span><%= fmtPrice(it.price) %></span>
+                </div>
+                <div style="display:flex; justify-content:space-between; gap:8px; font-size:12px; color:var(--muted)">
+                  <span>Số lượng: <%= it.quantity %></span>
+                  <span>Tạm tính: <%= fmtPrice(it.subtotal) %></span>
+                </div>
+                <% if (it.stock === 0) { %>
+                  <div style="color:#fca5a5; font-size:12px">Hết hàng</div>
+                <% } else if (it.quantity > it.stock) { %>
+                  <div style="color:#fdba74; font-size:12px">Vượt quá tồn kho (còn <%= it.stock %>)</div>
+                <% } %>
+              </div>
+            </div>
+          <% }) %>
+        </div>
+        <div style="margin-top:16px; display:grid; gap:6px; font-size:14px">
+          <div style="display:flex; justify-content:flex-end; gap:6px"><span>Tạm tính sản phẩm:</span><strong><span id="itemsTotal" data-usd="<%= total %>"><%= fmtPrice(total) %></span></strong></div>
+          <div style="display:flex; justify-content:flex-end; gap:6px"><span>Phí vận chuyển (<span id="shipMethodLabel">Tiêu chuẩn</span>):</span><strong><span id="shipFee" data-usd="2.00"><%= fmtPrice(2.00) %></span></strong></div>
+          <div style="display:flex; justify-content:flex-end; gap:6px; font-size:15px"><span>Tổng cộng:</span><strong><span id="grandTotal" data-usd="<%= (Number(total)+2).toFixed(2) %>"><%= fmtPrice(Number(total)+2) %></span></strong></div>
+        </div>
+      </div>
+      <div class="card" style="padding:16px; margin-top:16px">
+        <h3 style="margin:0 0 12px">Phương thức vận chuyển</h3>
+        <div style="display:grid; gap:10px">
+          <label style="display:flex; align-items:center; gap:8px"><input type="radio" name="ship_method" value="standard" checked> Tiêu chuẩn (3-5 ngày)</label>
+          <label style="display:flex; align-items:center; gap:8px"><input type="radio" name="ship_method" value="express"> Nhanh (1-2 ngày)</label>
+        </div>
+      </div>
+    </div>
+
+    <!-- Column 2: Address + Payment -->
+    <div class="checkout-col">
+      <div class="card" style="padding:16px;">
+        <h3 style="margin:0 0 12px">Địa chỉ nhận hàng</h3>
+        <% const hasAddr = (addresses && addresses.length); const def = addresses.find(a=>a.is_default) || addresses[0]; %>
+        <% if (hasAddr && def) { %>
+          <div id="currentAddress" style="border:1px solid var(--border); padding:10px; border-radius:8px; font-size:14px; line-height:1.4">
+            <div><strong><%= def.full_name %></strong> <span class="muted">(<%= def.phone || '—' %>)</span></div>
+            <div style="color:var(--muted)"><%= def.line1 %><% if (def.line2) { %>, <%= def.line2 %><% } %>, <%= def.city || '' %> <%= def.state || '' %> <%= def.postal_code || '' %>, <%= def.country || '' %></div>
+          </div>
+          <input type="hidden" id="selectedAddressId" value="<%= def.id %>" />
+          <button type="button" class="btn btn-outline" id="addrChange" style="margin-top:12px">Thay đổi</button>
+        <% } else { %>
+          <p class="muted" style="margin:0 0 8px">Chưa có địa chỉ. Thêm mới:</p>
+          <button type="button" class="btn btn-primary" id="addrChange">+ Thêm địa chỉ</button>
+          <input type="hidden" id="selectedAddressId" value="" />
+        <% } %>
+      </div>
+      <div class="card" style="padding:16px; margin-top:16px">
+        <h3 style="margin:0 0 12px">Phương thức thanh toán</h3>
+        <div style="display:grid; gap:10px">
+          <label style="display:flex; align-items:center; gap:8px"><input type="radio" name="pm" value="paypal" checked> PayPal</label>
+          <label style="display:flex; align-items:center; gap:8px"><input type="radio" name="pm" value="vietqr"> Chuyển khoản QR (VietQR)</label>
+          <label style="display:flex; align-items:center; gap:8px"><input type="radio" name="pm" value="cod"> Thanh toán khi nhận hàng (COD)</label>
+        </div>
+        <div id="qrBox" style="display:none; margin-top:12px; border:1px dashed var(--border); padding:12px; border-radius:8px">
+          <% if (!VIETQR_BIN || !VIETQR_ACC) { %>
+            <div class="muted">Chưa cấu hình VietQR (VIETQR_BIN/VIETQR_ACC)</div>
+          <% } else { %>
+            <div class="muted" style="margin-bottom:8px">Chọn VietQR để tạo mã. Sau khi chuyển khoản theo tổng đơn, bấm “Đã chuyển khoản”.</div>
+            <img id="qrImg" alt="VietQR" style="max-width:220px; background:#fff; padding:8px; border-radius:8px" />
+            <div id="qrNote" class="muted" style="margin-top:6px"></div>
+            <div style="margin-top:10px; display:flex; gap:8px; align-items:center">
+              <button type="button" class="btn btn-primary" id="qrConfirm">Đã chuyển khoản</button>
+            </div>
+          <% } %>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div style="margin-top:24px; display:flex; justify-content:flex-end">
+    <button id="pay" class="btn btn-primary" style="min-width:200px">Thanh toán</button>
+  </div>
+  <% } %>
+</section>
+
+<!-- Address Modal -->
+<div id="addrModal" style="position:fixed; inset:0; background:rgba(0,0,0,.55); display:none; z-index:500; align-items:center; justify-content:center; padding:20px">
+  <div style="background:#111; width:100%; max-width:640px; border-radius:12px; padding:20px; border:1px solid var(--border); max-height:80vh; overflow:auto">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px">
+      <h3 style="margin:0">Chọn / Thêm địa chỉ</h3>
+      <button type="button" id="addrModalClose" class="btn btn-outline" style="padding:4px 10px">✕</button>
+    </div>
+    <div id="addrSelectList" style="display:flex; flex-direction:column; gap:10px; margin-bottom:16px">
+      <% if (addresses && addresses.length){ addresses.forEach(a => { %>
+        <label style="display:flex; gap:10px; align-items:flex-start; border:1px solid var(--border); border-radius:8px; padding:10px; font-size:13px">
+          <input type="radio" name="modal_address_id" value="<%= a.id %>" <%= (selectedAddressId===a.id)?'checked':'' %> />
+          <div>
+            <div><strong><%= a.full_name %></strong> <span class="muted">(<%= a.phone || '—' %>)</span> <% if (a.is_default){ %><span style="font-size:11px; margin-left:6px; opacity:.8">[Mặc định]</span><% } %></div>
+            <div style="color:var(--muted)"><%= a.line1 %><% if (a.line2){ %>, <%= a.line2 %><% } %>, <%= a.city||'' %> <%= a.state||'' %> <%= a.postal_code||'' %>, <%= a.country||'' %></div>
+          </div>
+        </label>
+      <% }) } %>
+    </div>
+    <form id="addrForm" style="margin-top:12px">
+      <h4 style="margin:0 0 8px">Thêm địa chỉ mới</h4>
+      <div style="display:grid; gap:10px; grid-template-columns:repeat(2,minmax(0,1fr))">
+        <div>
+          <label>Họ tên</label>
+          <input class="input" name="full_name" required>
+        </div>
+        <div>
+          <label>Điện thoại</label>
+          <input class="input" name="phone">
+        </div>
+        <div style="grid-column:1/-1">
+          <label>Địa chỉ dòng 1</label>
+          <input class="input" name="line1" required>
+        </div>
+        <div style="grid-column:1/-1">
+          <label>Địa chỉ dòng 2</label>
+          <input class="input" name="line2">
+        </div>
+        <div>
+          <label>Thành phố</label>
+          <input class="input" name="city">
+        </div>
+        <div>
+          <label>Tỉnh/TP</label>
+          <input class="input" name="state">
+        </div>
+        <div>
+          <label>Mã bưu chính</label>
+          <input class="input" name="postal_code">
+        </div>
+        <div>
+          <label>Quốc gia</label>
+          <input class="input" name="country" value="VN">
+        </div>
+        <label style="display:flex; align-items:center; gap:8px"><input type="checkbox" name="is_default" checked> Mặc định</label>
+      </div>
+      <div style="margin-top:12px; display:flex; gap:8px">
+        <button type="submit" class="btn btn-primary">Lưu địa chỉ</button>
+      </div>
+    </form>
+    <div style="margin-top:20px; display:flex; justify-content:flex-end; gap:10px">
+      <button class="btn btn-outline" id="addrModalCancel">Hủy</button>
+      <button class="btn btn-primary" id="addrModalApply">Chọn địa chỉ</button>
+    </div>
+  </div>
+</div>
+
+<div class="spinner-overlay" id="spinner"><div class="spinner"></div></div>
+<div id="checkoutToast" class="toast" aria-live="polite"></div>
+
+<script>
+function showToast(msg){ const t=document.getElementById('checkoutToast'); t.textContent=msg; t.classList.add('toast','toast--show'); setTimeout(()=> t.classList.remove('toast--show'), 2800); }
+function setLoading(on){ document.getElementById('spinner').style.display = on ? 'flex':'none'; }
+
+const CURR = '<%= currency %>';
+const RATE = Number('<%= usdToVnd %>');
+function formatPrice(usd){ const n = Number(usd)||0; if (CURR==='VND'){ return Math.round(n*RATE).toLocaleString('vi-VN') + '₫'; } return '$' + n.toFixed(2); }
+const SHIPPING_FEES={standard:2.00, express:5.00};
+function currentShipMethod(){ return (document.querySelector('input[name="ship_method"]:checked')||{}).value || 'standard'; }
+function recalcTotals(){
+  const itemsTotalUsd = Number('<%= total %>');
+  const m = currentShipMethod();
+  const feeUsd = SHIPPING_FEES[m] || 0;
+  const grandUsd = itemsTotalUsd + feeUsd;
+  const shipFeeEl = document.getElementById('shipFee');
+  const grandEl = document.getElementById('grandTotal');
+  const shipLabel = document.getElementById('shipMethodLabel');
+  if (shipFeeEl){ shipFeeEl.dataset.usd = feeUsd.toFixed(2); shipFeeEl.textContent = formatPrice(feeUsd); }
+  if (grandEl){ grandEl.dataset.usd = grandUsd.toFixed(2); grandEl.textContent = formatPrice(grandUsd); }
+  if (shipLabel) shipLabel.textContent = m==='express'?'Nhanh':'Tiêu chuẩn';
+}
+document.addEventListener('change', e=>{ if (e.target && e.target.name==='ship_method'){ recalcTotals(); }});
+recalcTotals();
+
+async function startVietQRFlow(address_id){
+  const ship_method = currentShipMethod();
+  const res = await fetch('/order/qr/start', { method:'POST', headers:{'Accept':'application/json','Content-Type':'application/json'}, credentials:'include', body: JSON.stringify({ address_id, ship_method }) });
+  if (res.status === 401){ window.location = '/login'; return; }
+  const j = await res.json().catch(()=>null);
+  if (!j || !j.ok){ showToast(j && j.error ? j.error : 'Không thể khởi tạo QR'); return false; }
+  const qrBox = document.getElementById('qrBox');
+  const qrImg = document.getElementById('qrImg');
+  const qrNote = document.getElementById('qrNote');
+  if (qrImg) qrImg.src = j.imgUrl;
+  if (qrNote) qrNote.textContent = 'Nội dung CK: ' + j.note + ' • Tổng đơn: ' + formatPrice(j.total);
+  if (qrBox) { qrBox.style.display = 'block'; qrBox.setAttribute('data-loaded','1'); }
+  return true;
+}
+
+const payBtn = document.getElementById('pay');
+if (payBtn) payBtn.addEventListener('click', async () => {
+  try {
+    setLoading(true); payBtn.disabled = true;
+    const hiddenAddr = document.getElementById('selectedAddressId');
+  const address_id = hiddenAddr ? hiddenAddr.value : null;
+  const ship_method = currentShipMethod();
+    if (!address_id) { showToast('Vui lòng chọn hoặc thêm địa chỉ nhận hàng'); return; }
+    const pm = (document.querySelector('input[name="pm"]:checked')||{}).value || 'paypal';
+    if (pm === 'paypal'){
+  const res = await fetch('/order/paypal/create', { method:'POST', headers:{'Accept':'application/json','Content-Type':'application/json'}, credentials:'include', body: JSON.stringify({ address_id, ship_method }) });
+      if (res.redirected || res.status === 401){ window.location = '/login'; return; }
+      const data = await res.json().catch(()=>null);
+      if (!data){ showToast('Lỗi máy chủ'); return; }
+      if (data.error === 'out_of_stock'){ showToast('Một số sản phẩm đã vượt quá tồn kho. Vui lòng điều chỉnh giỏ hàng.'); return; }
+      if (data.error === 'missing_address' || data.error === 'invalid_address'){ showToast('Vui lòng chọn địa chỉ hợp lệ'); return; }
+      const link = (data.links||[]).find(l => l.rel === 'approve');
+      if (link && link.href){ window.location = link.href; return; }
+      showToast('Không lấy được liên kết thanh toán');
+    } else if (pm === 'vietqr'){
+      await startVietQRFlow(address_id);
+    } else if (pm === 'cod'){
+  const res = await fetch('/order/cod', { method:'POST', headers:{'Accept':'application/json','Content-Type':'application/json'}, credentials:'include', body: JSON.stringify({ address_id, ship_method }) });
+      if (res.status === 401){ window.location = '/login'; return; }
+      const j = await res.json().catch(()=>null);
+      if (j && j.ok && j.redirect) { window.location = j.redirect; return; }
+      showToast(j && j.error ? j.error : 'Không thể tạo đơn COD');
+    }
+  } catch(err){ showToast('Lỗi mạng'); }
+  finally { setLoading(false); payBtn.disabled = false; }
+});
+// QR confirm
+const qrConfirm = document.getElementById('qrConfirm');
+if (qrConfirm){ qrConfirm.addEventListener('click', async ()=>{
+  try{
+    setLoading(true); qrConfirm.disabled = true;
+    const res = await fetch('/order/qr/confirm', { method:'POST', headers:{'Accept':'application/json'}, credentials:'include' });
+    if (res.status === 401){ window.location = '/login'; return; }
+    const j = await res.json().catch(()=>null);
+    if (j && j.ok && j.redirect) { window.location = j.redirect; return; }
+    showToast(j && j.error ? j.error : 'Không thể xác nhận thanh toán QR');
+  } catch(err){ showToast('Lỗi mạng'); }
+  finally { setLoading(false); qrConfirm.disabled = false; }
+}); }
+
+// Toggle QR box based on payment method
+document.addEventListener('change', async (e)=>{
+  const t = e.target; if (!t || t.name !== 'pm') return;
+  const qrBox = document.getElementById('qrBox');
+  if (!qrBox) return;
+  if (t.value === 'vietqr'){
+    const hiddenAddr = document.getElementById('selectedAddressId');
+    const address_id = hiddenAddr ? hiddenAddr.value : null;
+    if (!address_id){ showToast('Chưa có địa chỉ nhận hàng'); qrBox.style.display='none'; return; }
+    if (!qrBox.getAttribute('data-loaded')){
+      try{ setLoading(true); const ok = await startVietQRFlow(address_id); if(!ok){ qrBox.style.display='none'; } else { qrBox.style.display='block'; } } finally { setLoading(false); }
+    } else { qrBox.style.display='block'; }
+  } else { qrBox.style.display = 'none'; }
+});
+
+// Address modal logic
+const addrModal = document.getElementById('addrModal');
+const addrChange = document.getElementById('addrChange');
+const addrModalClose = document.getElementById('addrModalClose');
+const addrModalCancel = document.getElementById('addrModalCancel');
+const addrModalApply = document.getElementById('addrModalApply');
+const addrSelectList = document.getElementById('addrSelectList');
+const addrForm = document.getElementById('addrForm');
+const selectedAddressHidden = document.getElementById('selectedAddressId');
+function openAddrModal(){ if (addrModal) addrModal.style.display='flex'; }
+function closeAddrModal(){ if (addrModal) addrModal.style.display='none'; }
+if (addrChange) addrChange.addEventListener('click', openAddrModal);
+if (addrModalClose) addrModalClose.addEventListener('click', closeAddrModal);
+if (addrModalCancel) addrModalCancel.addEventListener('click', closeAddrModal);
+if (addrModalApply) addrModalApply.addEventListener('click', ()=>{
+  const sel = addrSelectList ? addrSelectList.querySelector('input[name="modal_address_id"]:checked') : null;
+  if (sel){
+    selectedAddressHidden.value = sel.value;
+    const label = sel.closest('label');
+    if (label){
+      const infoDivs = label.querySelectorAll('div');
+      const currentAddress = document.getElementById('currentAddress');
+      if (currentAddress){ currentAddress.innerHTML = infoDivs[1].innerHTML; }
+    }
+    showToast('Đã chọn địa chỉ');
+    closeAddrModal();
+  } else { showToast('Chưa chọn địa chỉ'); }
+});
+
+if (addrForm){ addrForm.addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  const fd = new FormData(addrForm); const data = Object.fromEntries(fd.entries());
+  try{
+    const res = await fetch('/address', { method:'POST', headers:{'Accept':'application/json','Content-Type':'application/json'}, credentials:'include', body: JSON.stringify(data) });
+    if (res.status === 401){ window.location='/login'; return; }
+    const j = await res.json().catch(()=>null);
+    if (!j || !j.ok){ showToast(j && j.error ? j.error : 'Không thể lưu địa chỉ'); return; }
+    showToast('Đã thêm địa chỉ');
+    const a = j.address;
+    if (addrSelectList){
+      const label = document.createElement('label');
+      label.style.cssText = 'display:flex; gap:10px; align-items:flex-start; border:1px solid var(--border); border-radius:8px; padding:10px; font-size:13px';
+      label.innerHTML = '<input type="radio" name="modal_address_id" value="'+a.id+'" checked><div><div><strong>'+escapeHtml(a.full_name)+'</strong> <span class="muted">('+(a.phone||'—')+')</span>' + (a.is_default?'<span style="font-size:11px; margin-left:6px; opacity:.8">[Mặc định]</span>':'') + '</div><div style="color:var(--muted)">'+escapeHtml(a.line1)+(a.line2?(', '+escapeHtml(a.line2)):'')+(a.city?(', '+escapeHtml(a.city)):'')+' '+(a.state||'')+' '+(a.postal_code||'')+', '+(a.country||'')+'</div></div>';
+      addrSelectList.prepend(label);
+    }
+    selectedAddressHidden.value = a.id;
+    const currentAddress = document.getElementById('currentAddress');
+    if (currentAddress){ currentAddress.innerHTML = '<div><strong>'+escapeHtml(a.full_name)+'</strong> <span class="muted">('+(a.phone||'—')+')</span></div><div style="color:var(--muted)">'+escapeHtml(a.line1)+(a.line2?(', '+escapeHtml(a.line2)):'')+(a.city?(', '+escapeHtml(a.city)):'')+' '+(a.state||'')+' '+(a.postal_code||'')+', '+(a.country||'')+'</div>'; }
+    addrForm.reset();
+  }catch(err){ showToast('Lỗi mạng'); }
+}); }
+
+function escapeHtml(str){ return String(str).replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','"':'&quot;','\'':'&#39;'}[s])); }
+</script>
+

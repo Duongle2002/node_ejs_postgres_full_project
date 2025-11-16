@@ -1,0 +1,206 @@
+<% layout('layout') -%>
+
+<header class="page-head">
+  <div class="page-head__row">
+    <h2>Giỏ hàng</h2>
+    <div class="page-head__actions">
+      <a class="btn btn-outline" href="/products">Tiếp tục mua sắm</a>
+    </div>
+  </div>
+</header>
+
+<section class="section">
+  <% if (!items.length) { %>
+    <p>Giỏ hàng rỗng</p>
+  <% } else { %>
+    <table class="cart-table">
+      <tr>
+        <th>Sản phẩm</th>
+        <th>Giá</th>
+        <th style="width:220px">Số lượng</th>
+        <th>Thành tiền</th>
+        <th></th>
+      </tr>
+      <% let total = 0; items.forEach(i => { const subtotal = parseFloat(i.price) * i.quantity; total += subtotal; %>
+        <tr data-id="<%= i.id %>">
+          <td><strong><%= i.name %></strong></td>
+          <td><%= fmtPrice(i.price) %></td>
+          <td>
+            <div class="qty">
+              <button type="button" class="qty__btn" data-action="decr" aria-label="Giảm">-</button>
+              <input class="qty__input" type="text" value="<%= i.quantity %>" readonly>
+              <button type="button" class="qty__btn" data-action="incr" aria-label="Tăng">+</button>
+            </div>
+            <form method="POST" class="qty__form" data-id="<%= i.id %>" action="/cart/update/<%= i.id %>" style="display:none">
+              <input type="hidden" name="quantity" value="<%= i.quantity %>">
+            </form>
+            <form method="POST" class="remove__form" data-id="<%= i.id %>" action="/cart/remove/<%= i.id %>" style="display:none"></form>
+          </td>
+          <td><span class="row-subtotal" data-usd="<%= subtotal.toFixed(2) %>"><%= fmtPrice(subtotal) %></span></td>
+          <td>
+            <button type="button" class="btn btn-outline btn-danger" data-action="remove">Xóa</button>
+          </td>
+        </tr>
+      <% }) %>
+    </table>
+    <div class="cart-footer">
+      <button type="button" class="btn btn-outline btn-danger" id="clear-cart">Xóa tất cả</button>
+      <span style="flex:1"></span>
+      <p><strong>Tổng:</strong> <span id="cart-total" data-usd="<%= total.toFixed(2) %>"><%= fmtPrice(total) %></span></p>
+      <a class="btn btn-primary" href="/order/checkout">Thanh toán</a>
+    </div>
+  <% } %>
+</section>
+
+<!-- Spinner + Toast UI -->
+<div id="spinner" class="spinner-overlay" aria-hidden="true"><div class="spinner"></div></div>
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+<div id="confirm-modal" class="spinner-overlay" aria-hidden="true" style="backdrop-filter: blur(2px)">
+  <div style="background:var(--panel); border:1px solid var(--border); padding:16px; border-radius:10px; min-width:280px; max-width:90%">
+    <div id="confirm-message" style="margin-bottom:12px">Bạn có chắc muốn xóa?</div>
+    <div style="display:flex; gap:8px; justify-content:flex-end">
+      <button type="button" class="btn btn-outline" id="confirm-cancel">Hủy</button>
+      <button type="button" class="btn btn-primary" id="confirm-ok">Xóa</button>
+    </div>
+  </div>
+  <style> #confirm-modal{display:none} #confirm-modal.show{display:flex} </style>
+</div>
+
+<script>
+  (function(){
+    const section = document.querySelector('section') || document.currentScript.closest('section');
+    const spinner = document.getElementById('spinner');
+    const toast = document.getElementById('toast');
+
+    function showSpinner(){ if (spinner) spinner.style.display = 'flex'; }
+    function hideSpinner(){ if (spinner) spinner.style.display = 'none'; }
+    let toastTimer;
+    function showToast(msg, isError){
+      if (!toast) return;
+      toast.textContent = msg || (isError ? 'Có lỗi xảy ra' : 'Đã cập nhật giỏ hàng');
+      toast.style.borderColor = isError ? '#7f1d1d' : 'var(--border)';
+      toast.style.color = isError ? '#fecaca' : 'var(--text)';
+      toast.classList.add('toast--show');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(()=> toast.classList.remove('toast--show'), 1800);
+    }
+
+    function confirmModal(message){
+      return new Promise(resolve => {
+        const modal = document.getElementById('confirm-modal');
+        const msg = document.getElementById('confirm-message');
+        const ok = document.getElementById('confirm-ok');
+        const cancel = document.getElementById('confirm-cancel');
+        if (!modal) return resolve(confirm(message));
+        msg.textContent = message || 'Xác nhận';
+        modal.classList.add('show');
+        function cleanup(){ modal.classList.remove('show'); ok.onclick = cancel.onclick = null; }
+        ok.onclick = () => { cleanup(); resolve(true); };
+        cancel.onclick = () => { cleanup(); resolve(false); };
+      });
+    }
+
+    if (!section) return;
+  const CURR = '<%= currency %>';
+  const RATE = Number('<%= usdToVnd %>');
+    function formatPrice(usd){ const n = Number(usd)||0; if (CURR==='VND'){ return Math.round(n*RATE).toLocaleString('vi-VN') + '₫'; } return '$' + n.toFixed(2); }
+
+    section.addEventListener('click', async function(e){
+      const btn = e.target.closest('button');
+      if(!btn) return;
+      const action = btn.getAttribute('data-action');
+      if (action === 'incr' || action === 'decr' || action === 'remove') {
+        const row = btn.closest('tr');
+        if(!row) return;
+        const id = row.getAttribute('data-id');
+        const qtyInput = row.querySelector('.qty__input');
+        const subtotalEl = row.querySelector('.row-subtotal');
+        const totalEl = document.getElementById('cart-total');
+
+        const current = parseInt(qtyInput.value, 10) || 1;
+        let next = current;
+        let url = '';
+        let body = '';
+
+        if (action === 'incr') {
+          next = current + 1;
+          url = `/cart/update/${id}`;
+          body = `quantity=${encodeURIComponent(next)}`;
+        }
+        if (action === 'decr') {
+          next = current - 1;
+          if (next <= 0) {
+            // Tự động xóa khi số lượng về 0 (không hỏi), và hiển thị toast
+            url = `/cart/remove/${id}`;
+            body = '';
+          } else {
+            url = `/cart/update/${id}`;
+            body = `quantity=${encodeURIComponent(next)}`;
+          }
+        }
+        if (action === 'remove') {
+          const ok = await confirmModal('Bạn có chắc muốn xóa sản phẩm này?');
+          if (!ok) return;
+          url = `/cart/remove/${id}`;
+          body = '';
+        }
+
+        try {
+          showSpinner();
+          const resp = await fetch(url, {
+            method: 'POST',
+            headers: { 'Accept': 'application/json', 'Content-Type': 'application/x-www-form-urlencoded' },
+            credentials: 'same-origin',
+            body
+          });
+          if (resp.status === 401 || resp.status === 403) { window.location.href = '/login'; return; }
+          const data = await resp.json();
+          if (!data || !data.ok) throw new Error('Update failed');
+
+          if (data.removed) {
+            row.remove();
+          } else {
+            qtyInput.value = data.quantity;
+            if (subtotalEl){ subtotalEl.dataset.usd = Number(data.subtotal).toFixed(2); subtotalEl.textContent = formatPrice(data.subtotal); }
+          }
+
+          if (totalEl){ totalEl.dataset.usd = Number(data.total).toFixed(2); totalEl.textContent = formatPrice(data.total); }
+
+          // if table is empty now
+          const hasRows = section.querySelectorAll('tr[data-id]').length > 0;
+          if (!hasRows) {
+            section.innerHTML = '<p>Giỏ hàng rỗng</p>';
+          }
+          showToast(data.removed ? 'Đã xóa sản phẩm khỏi giỏ hàng' : 'Đã cập nhật giỏ hàng');
+        } catch (err) {
+          console.error(err);
+          showToast('Không thể cập nhật giỏ hàng. Vui lòng thử lại.', true);
+        } finally {
+          hideSpinner();
+        }
+      }
+    });
+
+    const clearBtn = document.getElementById('clear-cart');
+    if (clearBtn) {
+      clearBtn.addEventListener('click', async function(){
+        const ok = await confirmModal('Bạn có muốn xóa tất cả sản phẩm trong giỏ hàng?');
+        if (!ok) return;
+        try {
+          showSpinner();
+          const resp = await fetch('/cart/clear', { method: 'POST', headers: { 'Accept': 'application/json' }, credentials: 'same-origin' });
+          if (resp.status === 401 || resp.status === 403) { window.location.href = '/login'; return; }
+          const data = await resp.json();
+          if (!data || !data.ok) throw new Error('Clear failed');
+          section.innerHTML = '<p>Giỏ hàng rỗng</p>';
+          showToast('Đã xóa tất cả sản phẩm');
+        } catch (err) {
+          console.error(err);
+          showToast('Không thể xóa giỏ hàng. Vui lòng thử lại.', true);
+        } finally {
+          hideSpinner();
+        }
+      });
+    }
+  })();
+</script>

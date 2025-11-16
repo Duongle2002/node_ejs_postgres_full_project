@@ -1,0 +1,46 @@
+<% layout('layout') -%>
+
+<header class="page-head">
+  <div class="page-head__row">
+    <h2>Quản lý sản phẩm</h2>
+    <a href="/admin/products/new" class="btn btn-primary">Thêm sản phẩm</a>
+  </div>
+</header>
+
+<section class="section">
+  <% if (!products.length) { %>
+    <p>Chưa có sản phẩm.</p>
+  <% } else { %>
+    <table>
+      <tr>
+        <th width="60">ID</th>
+        <th>Tên</th>
+  <th width="120">Giá</th>
+  <th width="100">Tồn kho</th>
+        <th width="120">Ảnh</th>
+        <th width="200"></th>
+      </tr>
+      <% products.forEach(p => { %>
+        <tr>
+          <td><%= p.id %></td>
+          <td><strong><%= p.name %></strong><div class="muted" style="font-size:12px"><%= p.description || '' %></div></td>
+          <td><%= fmtPriceBoth(p.price) %></td>
+          <td><%= p.stock || 0 %></td>
+          <td>
+            <% if (p.image) { %>
+              <img src="<%= p.image %>" alt="" style="height:40px; width:auto; object-fit:cover"/>
+            <% } else { %>
+              <span class="muted">(No image)</span>
+            <% } %>
+          </td>
+          <td>
+            <a class="btn btn-outline" href="/admin/products/<%= p.id %>/edit">Sửa</a>
+            <form method="POST" action="/admin/products/<%= p.id %>/delete" style="display:inline" onsubmit="return confirm('Xóa sản phẩm này?')">
+              <button class="btn btn-outline btn-danger" type="submit">Xóa</button>
+            </form>
+          </td>
+        </tr>
+      <% }) %>
+    </table>
+  <% } %>
+</section>

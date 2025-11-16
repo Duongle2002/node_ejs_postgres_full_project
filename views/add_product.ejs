@@ -1,0 +1,42 @@
+<% layout('layout') -%>
+<h2>Thêm sản phẩm</h2>
+<form method="POST" action="/products/add" class="form-grid" style="max-width:760px">
+  <div class="form-field" style="grid-column:1/-1">
+    <label>Tên</label>
+    <input class="input" name="name" required />
+  </div>
+  <div class="form-field">
+    <label>Giá cơ sở (USD)</label>
+    <input class="input" id="priceInput" name="price" type="number" min="0" step="0.01" required />
+    <div style="font-size:12px; margin-top:4px; color:var(--muted)">Hiển thị cho khách: <strong id="pricePreview">0₫ (≈$0.00)</strong></div>
+  </div>
+  <div class="form-field">
+    <label>Ảnh (URL)</label>
+    <input class="input" name="image" />
+  </div>
+  <div class="form-field" style="grid-column:1/-1">
+    <label>Mô tả</label>
+    <textarea class="input" name="description" rows="4"></textarea>
+  </div>
+  <div style="grid-column:1/-1; display:flex; gap:8px; justify-content:flex-end; margin-top:4px">
+    <button class="btn btn-outline" type="reset">Hủy</button>
+    <button class="btn btn-primary">Thêm</button>
+  </div>
+</form>
+
+<style>
+.form-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:12px}
+.form-field label{display:block; margin-bottom:6px; font-size:13px; color:var(--muted)}
+.form-field .input{width:100%}
+</style>
+
+<script>
+(function(){
+  const rate = Number('<%= usdToVnd %>');
+  const inp = document.getElementById('priceInput');
+  const prev = document.getElementById('pricePreview');
+  function fmt(n){ n = Number(n)||0; const v = Math.round(n*rate).toLocaleString('vi-VN')+'₫'; return v + ' (≈$' + n.toFixed(2) + ')'; }
+  function update(){ if(prev && inp) prev.textContent = fmt(inp.value); }
+  if(inp){ inp.addEventListener('input', update); }
+})();
+</script>

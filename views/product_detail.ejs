@@ -1,0 +1,137 @@
+<% layout('layout') -%>
+<% if (notFound) { %>
+  <header class="page-head">
+    <div class="page-head__row">
+      <h2>Không tìm thấy sản phẩm</h2>
+      <a class="btn btn-outline" href="/products">← Quay lại danh sách</a>
+    </div>
+  </header>
+  <section class="section">
+    <p>Sản phẩm bạn yêu cầu không tồn tại hoặc đã bị xóa.</p>
+  </section>
+<% } else { %>
+<header class="page-head">
+  <div class="page-head__row">
+    <h2 style="margin:0"><%= product.name %></h2>
+    <a class="btn btn-outline" href="/products">← Danh sách</a>
+  </div>
+</header>
+<section class="section" style="display:grid; gap:40px; grid-template-columns:repeat(auto-fit,minmax(320px,1fr))">
+  <div class="pd-left">
+    <div class="pd-thumb">
+      <% if (product.image) { %>
+        <img src="<%= product.image %>" alt="<%= product.name %>" loading="lazy">
+      <% } else { %>
+        <div class="pd-thumb__placeholder">No image</div>
+      <% } %>
+    </div>
+  </div>
+  <div class="pd-info">
+    <div class="pd-price-row">
+  <span class="pd-price"><%= fmtPrice(product.price) %></span>
+      <% if (product.stock === 0) { %>
+        <span class="pd-stock pd-stock--out">Hết hàng</span>
+      <% } else if (product.stock < 5) { %>
+        <span class="pd-stock pd-stock--low">Còn <%= product.stock %></span>
+      <% } else { %>
+        <span class="pd-stock pd-stock--in">Còn hàng</span>
+      <% } %>
+    </div>
+    <p class="pd-desc"><%= product.description || 'Không có mô tả.' %></p>
+    <form method="POST" action="/cart/add/<%= product.id %>" class="pd-cart-form" onsubmit="return submitAdd(event)">
+      <label class="pd-qty-label">Số lượng</label>
+      <div class="qty" style="margin-bottom:16px">
+        <button type="button" class="qty__btn" onclick="decQty()">-</button>
+        <input class="qty__input" name="quantity" id="qtyInput" value="1" pattern="[0-9]+">
+        <button type="button" class="qty__btn" onclick="incQty()">+</button>
+      </div>
+      <% if (product.stock === 0) { %>
+        <button class="btn btn-primary" type="button" disabled>Hết hàng</button>
+      <% } else { %>
+        <button class="btn btn-primary" type="submit">Thêm vào giỏ</button>
+      <% } %>
+    </form>
+    <div id="pdToast" class="toast" aria-live="polite"></div>
+  </div>
+</section>
+<% if (related && related.length) { %>
+<section class="section">
+  <h3 style="margin:0 0 16px">Sản phẩm khác</h3>
+  <div class="grid grid-4">
+    <% related.forEach(r => { %>
+      <div class="card product-card">
+        <a class="product-card__thumb" href="/products/<%= r.id %>">
+          <% if (r.image) { %>
+            <img src="<%= r.image %>" alt="<%= r.name %>">
+          <% } else { %>
+            <div style="height:180px; display:flex; align-items:center; justify-content:center; font-size:12px; color:var(--muted)">No image</div>
+          <% } %>
+        </a>
+        <div class="product-card__body">
+          <h4 class="product-card__title"><a href="/products/<%= r.id %>" style="color:inherit; text-decoration:none"><%= r.name %></a></h4>
+          <div class="product-card__desc"><%= (r.description||'').slice(0,70) %></div>
+          <div class="product-card__footer">
+            <div class="product-card__price"><%= fmtPrice(r.price) %></div>
+            <% if (r.stock === 0) { %><span style="font-size:12px; color:#fca5a5">Hết hàng</span><% } %>
+          </div>
+        </div>
+      </div>
+    <% }) %>
+  </div>
+</section>
+<% } %>
+<% } %>
+
+<script>
+function decQty(){
+  const el = document.getElementById('qtyInput');
+  let v = parseInt(el.value,10)||1; if (v>1) v--; el.value = v;
+}
+function incQty(){
+  const el = document.getElementById('qtyInput');
+  let v = parseInt(el.value,10)||1; v++; el.value = v;
+}
+async function submitAdd(e){
+  e.preventDefault();
+  const form = e.target;
+  const fd = new FormData(form);
+  const data = Object.fromEntries(fd.entries());
+  try {
+    const res = await fetch('/cart/add/<%= product.id %>', { method:'POST', headers:{'Content-Type':'application/json','Accept':'application/json'}, body: JSON.stringify({ quantity: data.quantity }), credentials:'include' });
+    if (res.redirected || res.status === 401) { window.location = '/login'; return false; }
+    if (!res.ok){ showToast('Lỗi thêm vào giỏ ('+res.status+')'); return false; }
+    const j = await res.json().catch(()=>null);
+    if (j && j.ok){
+      showToast('Đã thêm vào giỏ');
+    } else if (j && j.error){
+      showToast(j.error);
+    } else {
+      showToast('Đã gửi yêu cầu');
+    }
+  } catch(err){
+    showToast('Lỗi mạng');
+  }
+  return false;
+}
+function showToast(msg){
+  const t = document.getElementById('pdToast');
+  t.textContent = msg; t.classList.add('toast','toast--show');
+  setTimeout(()=>{ t.classList.remove('toast--show'); }, 2500);
+}
+</script>
+
+<style>
+.pd-thumb{background:var(--panel); border:1px solid var(--border); border-radius:16px; overflow:hidden}
+.pd-thumb img{width:100%; height:100%; max-height:460px; object-fit:cover; display:block}
+.pd-thumb__placeholder{height:320px; display:flex; align-items:center; justify-content:center; font-size:13px; color:var(--muted)}
+.pd-price-row{display:flex; align-items:center; gap:12px; margin:8px 0 12px}
+.pd-price{font-size:34px; font-weight:700; background:linear-gradient(90deg,var(--primary),#4ade80); -webkit-background-clip:text; background-clip:text; color:transparent}
+.pd-stock{font-size:12px; padding:4px 8px; border-radius:20px; border:1px solid var(--border); letter-spacing:.5px}
+.pd-stock--in{background:#052e16; color:#86efac}
+.pd-stock--low{background:#3f1d06; color:#fdba74}
+.pd-stock--out{background:#450a0a; color:#fecaca}
+.pd-desc{line-height:1.6; color:var(--muted); font-size:15px}
+.pd-cart-form{margin-top:16px}
+.pd-qty-label{display:block; font-size:12px; opacity:.8; margin-bottom:4px}
+@media (max-width:760px){.pd-price{font-size:28px}}
+</style>
