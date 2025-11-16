@@ -144,7 +144,7 @@ exports.capture = async (req, res) => {
       const address_id = parseInt(req.cookies.checkout_address_id, 10) || null;
       const orderInsert = await clientDb.query(
         'INSERT INTO orders(user_id, total, payment_method, status, address_id, ship_method, shipping_fee) VALUES($1,$2,$3,$4,$5,$6,$7) RETURNING id',
-        [user_id, grandTotal, 'paypal', 'paid', address_id, ship_method, ship_fee]
+        [user_id, grandTotal, 'paypal', 'processing', address_id, ship_method, ship_fee]
       );
       const orderId = orderInsert.rows[0].id;
 
@@ -376,7 +376,7 @@ exports.qrConfirm = async (req, res) => {
     const address_id = parseInt(req.cookies.checkout_address_id, 10) || null;
     const orderInsert = await clientDb.query(
       'INSERT INTO orders(user_id, total, payment_method, status, address_id, ship_method, shipping_fee) VALUES($1,$2,$3,$4,$5,$6,$7) RETURNING id',
-      [user_id, grandTotal, 'vietqr', 'paid', address_id, ship_method, ship_fee]
+      [user_id, grandTotal, 'vietqr', 'processing', address_id, ship_method, ship_fee]
     );
     const orderId = orderInsert.rows[0].id;
     for (const it of rows.rows){

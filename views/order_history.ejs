@@ -9,6 +9,16 @@
   <% if (!orders || !orders.length) { %>
     <div class="card" style="padding:20px">Bạn chưa có đơn hàng nào.</div>
   <% } else { %>
+    <% const statusLabel = s => ({
+      pending: 'Chờ xác nhận',
+      paid: 'Đã thanh toán',
+      processing: 'Chờ lấy hàng',
+      confirmed: 'Chờ lấy hàng',
+      picked: 'Đang giao',
+      shipped: 'Đang giao',
+      delivered: 'Đã giao',
+      cancelled: 'Đã hủy'
+    }[s] || s); %>
     <% orders.forEach(function(o){ %>
       <div class="order-item card">
         <div class="order-item__meta">
@@ -19,7 +29,7 @@
         </div>
         <div style="display:flex; align-items:center; gap:12px">
           <div class="order-item__total"><%= (typeof fmtPrice === 'function') ? fmtPrice(o.total) : o.total %></div>
-          <div class="order-status-badge <%= o.status %>"><%= o.status %></div>
+          <div class="order-status-badge <%= o.status %>"><%= statusLabel(o.status) %></div>
           <div class="order-actions">
             <a class="btn btn-outline" href="/orders/<%= o.id %>">Xem chi tiết</a>
           </div>

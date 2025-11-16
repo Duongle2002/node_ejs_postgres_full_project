@@ -1,7 +1,9 @@
 <% layout('layout') -%>
 <section class="order-detail">
+  <% const statusLabelMap = { pending: 'Chờ xác nhận', paid: 'Đã thanh toán', processing: 'Chờ lấy hàng', confirmed: 'Chờ lấy hàng', picked: 'Đang giao', shipped: 'Đang giao', delivered: 'Đã giao', cancelled: 'Đã hủy' }; const statusLabel = statusLabelMap[order.status] || order.status; %>
   <div class="panel">
     <h2>Chi tiết đơn hàng #<%= order.id %></h2>
+    <div style="margin-top:4px; font-size:14px" class="muted">Trạng thái: <strong id="orderStatus"><%= statusLabel %></strong></div>
   </div>
 
   <!-- Stepper -->
@@ -109,8 +111,9 @@
 <script>
 // Poll order status every 20s and show toast on change
 let currentStatus = '<%= order.status %>';
+const statusLabelMap = { pending: 'Chờ xác nhận', paid: 'Đã thanh toán', processing: 'Chờ lấy hàng', confirmed: 'Chờ lấy hàng', picked: 'Đang giao', shipped: 'Đang giao', delivered: 'Đã giao', cancelled: 'Đã hủy' };
 function showToast(msg){ const t=document.createElement('div'); t.textContent=msg; t.style.position='fixed'; t.style.right='20px'; t.style.bottom='20px'; t.style.background='#111'; t.style.color='#fff'; t.style.padding='10px 12px'; t.style.borderRadius='6px'; t.style.zIndex=9999; document.body.appendChild(t); setTimeout(()=>{ t.style.transition='opacity .4s'; t.style.opacity=0; setTimeout(()=>t.remove(),400); },4000); }
-async function pollStatus(){ try{ const res = await fetch('/orders/<%= order.id %>/status', { credentials:'include' }); if (res.ok){ const j = await res.json(); if (j.status && j.status !== currentStatus){ currentStatus = j.status; const el = document.getElementById('orderStatus'); if (el) el.textContent = currentStatus; showToast('Trạng thái đơn hàng thay đổi: ' + currentStatus); } } }catch(e){} }
+async function pollStatus(){ try{ const res = await fetch('/orders/<%= order.id %>/status', { credentials:'include' }); if (res.ok){ const j = await res.json(); if (j.status && j.status !== currentStatus){ currentStatus = j.status; const el = document.getElementById('orderStatus'); if (el) el.textContent = statusLabelMap[currentStatus] || currentStatus; showToast('Trạng thái đơn hàng thay đổi: ' + (statusLabelMap[currentStatus] || currentStatus)); } } }catch(e){} }
 setInterval(pollStatus, 20000);
 // Cancellation logic
 const cancelBtn = document.getElementById('cancelBtn');
