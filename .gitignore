@@ -9,6 +9,7 @@ yarn.lock
 # Env files
 .env
 .env.*
+deploy/.env
 
 # Logs
 logs

@@ -1,0 +1,25 @@
+node_modules
+npm-debug.log
+Dockerfile*
+.dockerignore
+.git
+.gitignore
+frontend/
+.tmp
+**/*.md
+**/*.log
+**/.DS_Store
+
+# Keep only server-side code in image
+!/public
+!/views
+!/controllers
+!/middlewares
+!/migrations
+!/routes
+!/scripts
+!/sql
+app.js
+db.js
+package.json
+README.md

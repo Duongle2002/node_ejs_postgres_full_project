@@ -6,6 +6,7 @@ const env = process.env.PAYPAL_MODE === 'live'
   : new paypal.core.SandboxEnvironment(process.env.PAYPAL_CLIENT_ID, process.env.PAYPAL_CLIENT_SECRET);
 
 const client = new paypal.core.PayPalHttpClient(env);
+const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
 const buildVietQR = (bin, acc, amount, info, template='compact') => {
   if (!bin || !acc) return null;
   const base = `https://img.vietqr.io/image/${encodeURIComponent(bin)}-${encodeURIComponent(acc)}-qr_only.png`;
@@ -96,9 +97,13 @@ exports.createOrder = async (req, res) => {
     // Log PayPal create response and approval link for debugging
     try { console.log('PayPal create id=', order.result && order.result.id); } catch (e) {}
     try { const approve = (order.result && order.result.links)||[]; const a = approve.find(l=>l.rel==='approve'); if (a) console.log('PayPal approve link=', a.href); } catch(e){}
-    // store selected address id in short-lived cookie for capture step
+    // store selected address id + origin client in short-lived cookie for capture step
     res.cookie('checkout_address_id', address_id, { httpOnly: true, maxAge: 15 * 60 * 1000 });
     res.cookie('checkout_ship_method', ship_method, { httpOnly: true, maxAge: 15 * 60 * 1000 });
+    // optionally honor client flag (frontend) so capture can redirect back to SPA
+    if (req.body && req.body.client) {
+      res.cookie('checkout_client', String(req.body.client), { httpOnly: true, maxAge: 15 * 60 * 1000 });
+    }
     res.json(order.result);
   } catch (err) {
     console.error('PayPal create error', err && err.message ? err.message : err);
@@ -157,10 +162,15 @@ exports.capture = async (req, res) => {
       await clientDb.query('DELETE FROM cart WHERE user_id=$1', [user_id]);
       await clientDb.query('COMMIT');
 
+    const clientOrigin = (req.cookies && req.cookies.checkout_client) ? String(req.cookies.checkout_client) : null;
     res.clearCookie('checkout_address_id');
     res.clearCookie('checkout_ship_method');
-    // redirect to success page with order id so we can display order details
-    res.redirect('/order/success?orderId=' + orderId);
+    res.clearCookie('checkout_client');
+    // redirect to appropriate success page (frontend SPA or server-rendered)
+    if (clientOrigin === 'frontend') {
+      return res.redirect(FRONTEND_URL + '/success?orderId=' + orderId);
+    }
+    return res.redirect('/order/success?orderId=' + orderId);
     } catch (e) {
       await clientDb.query('ROLLBACK');
       console.error(e);
@@ -339,6 +349,9 @@ exports.qrStart = async (req, res) => {
   const grandTotal = (itemsTotal + ship_fee).toFixed(2);
   res.cookie('checkout_address_id', address_id, { httpOnly: true, maxAge: 15 * 60 * 1000 });
   res.cookie('checkout_ship_method', ship_method, { httpOnly: true, maxAge: 15 * 60 * 1000 });
+  if (req.body && req.body.client) {
+    res.cookie('checkout_client', String(req.body.client), { httpOnly: true, maxAge: 15 * 60 * 1000 });
+  }
 
   const note = `ORDER-${user_id}-${Date.now()}`;
   // Do not fix amount in QR to avoid incompatibility (no FX rate). Still display total to user
@@ -385,8 +398,13 @@ exports.qrConfirm = async (req, res) => {
     }
     await clientDb.query('DELETE FROM cart WHERE user_id=$1', [user_id]);
     await clientDb.query('COMMIT');
-  res.clearCookie('checkout_address_id');
+    const clientOrigin = (req.cookies && req.cookies.checkout_client) ? String(req.cookies.checkout_client) : null;
+    res.clearCookie('checkout_address_id');
   res.clearCookie('checkout_ship_method');
+  res.clearCookie('checkout_client');
+    if (clientOrigin === 'frontend') {
+      return res.json({ ok: true, redirect: FRONTEND_URL + '/success?orderId=' + orderId });
+    }
     return res.json({ ok: true, redirect: '/order/success?orderId=' + orderId });
   } catch (e) {
     try { await clientDb.query('ROLLBACK'); } catch {}
@@ -434,6 +452,10 @@ exports.codCreate = async (req, res) => {
     }
     await clientDb.query('DELETE FROM cart WHERE user_id=$1', [user_id]);
     await clientDb.query('COMMIT');
+    const clientOrigin = (req.body && req.body.client) ? String(req.body.client) : (req.cookies && req.cookies.checkout_client) ? String(req.cookies.checkout_client) : null;
+    if (clientOrigin === 'frontend') {
+      return res.json({ ok: true, redirect: FRONTEND_URL + '/success?orderId=' + orderId });
+    }
     return res.json({ ok: true, redirect: '/order/success?orderId=' + orderId });
   } catch (e) {
     try { await clientDb.query('ROLLBACK'); } catch {}

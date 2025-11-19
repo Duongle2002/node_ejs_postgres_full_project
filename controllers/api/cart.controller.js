@@ -13,7 +13,7 @@ exports.get = async (req, res) => {
     } else cartId = r.rows[0].id;
 
     const items = await pool.query(
-      `SELECT ci.id, ci.product_id, ci.qty, p.name, p.price, p.slug
+      `SELECT ci.id, ci.product_id, ci.qty, p.name, p.price, p.slug, p.image
        FROM cart_items ci
        LEFT JOIN products p ON p.id=ci.product_id
        WHERE ci.cart_id=$1`,

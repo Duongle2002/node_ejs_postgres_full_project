@@ -12,6 +12,7 @@ CREATE TABLE IF NOT EXISTS products (
   id SERIAL PRIMARY KEY,
   name TEXT NOT NULL,
   price NUMERIC NOT NULL,
+  short_description TEXT,
   description TEXT,
   image TEXT,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -20,6 +21,7 @@ CREATE TABLE IF NOT EXISTS products (
 -- ensure products has common columns used by the app
 ALTER TABLE products ADD COLUMN IF NOT EXISTS slug TEXT;
 ALTER TABLE products ADD COLUMN IF NOT EXISTS stock INT DEFAULT 0;
+ALTER TABLE products ADD COLUMN IF NOT EXISTS short_description TEXT;
 
 CREATE TABLE IF NOT EXISTS cart (
   id SERIAL PRIMARY KEY,

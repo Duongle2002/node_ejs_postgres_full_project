@@ -97,18 +97,43 @@ exports.list = async (req, res) => {
   }
 };
 
-// Get order detail (user or admin)
+// Get order detail (user or admin) with address and product images
 exports.view = async (req, res) => {
   const user = req.user;
   const id = parseInt(req.params.id, 10);
   if (!id) return res.status(400).json({ error: 'missing' });
   try {
-    const r = await pool.query('SELECT * FROM orders WHERE id=$1 LIMIT 1', [id]);
-    if (!r.rows.length) return res.status(404).json({ error: 'not_found' });
-    const order = r.rows[0];
+    const or = await pool.query(
+      `SELECT o.*, a.full_name AS addr_name, a.phone AS addr_phone, a.line1 AS addr_line1, a.line2 AS addr_line2, a.city AS addr_city, a.state AS addr_state, a.postal_code AS addr_postal_code, a.country AS addr_country
+       FROM orders o LEFT JOIN addresses a ON o.address_id=a.id WHERE o.id=$1 LIMIT 1`,
+      [id]
+    );
+    if (!or.rows.length) return res.status(404).json({ error: 'not_found' });
+    const order = or.rows[0];
     if (order.user_id !== user.id && user.role !== 'admin') return res.status(403).json({ error: 'forbidden' });
-    const items = await pool.query('SELECT oi.*, p.name, p.price FROM order_items oi LEFT JOIN products p ON p.id=oi.product_id WHERE oi.order_id=$1', [id]);
-    return res.json({ ok: true, order, items: items.rows });
+    const itemsRes = await pool.query(
+      'SELECT oi.*, p.name AS product_name, p.image AS product_image FROM order_items oi JOIN products p ON p.id=oi.product_id WHERE oi.order_id=$1',
+      [id]
+    );
+    const items = itemsRes.rows.map(r => ({
+      id: r.id,
+      product_id: r.product_id,
+      name: r.product_name,
+      image: r.product_image,
+      quantity: r.quantity,
+      price: r.price
+    }));
+    const address = {
+      full_name: order.addr_name,
+      phone: order.addr_phone,
+      line1: order.addr_line1,
+      line2: order.addr_line2,
+      city: order.addr_city,
+      state: order.addr_state,
+      postal_code: order.addr_postal_code,
+      country: order.addr_country
+    };
+    return res.json({ ok: true, order, items, address });
   } catch (e) {
     console.error('api.orders.view', e.message || e);
     return res.status(500).json({ error: 'server_error' });

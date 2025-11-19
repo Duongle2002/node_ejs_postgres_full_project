@@ -42,6 +42,9 @@ app.locals.VIETQR_ACC_NAME = process.env.VIETQR_ACC_NAME || '';
 	try { await require('./migrations/ensure_addresses_table')(); } catch (e) { console.error('ensure_addresses_table failed', e.message); }
 	try { await require('./migrations/ensure_orders_address_id')(); } catch (e) { console.error('ensure_orders_address_id failed', e.message); }
 	try { await require('./migrations/ensure_stock_column')(); } catch (e) { console.error('ensure_stock_column failed', e.message); }
+	try { await require('./migrations/ensure_short_description')(); } catch (e) { console.error('ensure_short_description failed', e.message); }
+	try { await require('./migrations/ensure_banners_table')(); } catch (e) { console.error('ensure_banners_table failed', e.message); }
+	try { await require('./migrations/ensure_demo_banners')(); } catch (e) { console.error('ensure_demo_banners failed', e.message); }
 	try { await require('./migrations/ensure_unbounded_text_columns')(); } catch (e) { console.error('ensure_unbounded_text_columns failed', e.message); }
 	try { await require('./migrations/ensure_ship_method_column')(); } catch (e) { console.error('ensure_ship_method_column failed', e.message); }
 	try { await require('./migrations/ensure_order_cancellation')(); } catch (e) { console.error('ensure_order_cancellation failed', e.message); }
@@ -123,6 +126,7 @@ app.use('/api/products', apiProducts);
 app.use('/api/cart', apiCart);
 app.use('/api/addresses', apiAddresses);
 app.use('/api/orders', apiOrders);
+app.use('/api/banners', require('./routes/api/banners'));
 
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

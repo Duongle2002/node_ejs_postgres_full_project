@@ -1,0 +1,68 @@
+version: "3.9"
+
+# Production deployment with backend + frontend (+ optional Postgres)
+services:
+  backend:
+    container_name: shop-backend
+    image: ${IMAGE_PREFIX:-local}/shop-backend:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    environment:
+      # Prefer DATABASE_URL; override in deploy/.env or Jenkins
+      DATABASE_URL: ${DATABASE_URL:-postgres://shop:shop@db:5432/shop}
+      DB_SSL: ${DB_SSL:-false}
+      PORT: ${BACKEND_PORT:-3001}
+      JWT_SECRET: ${JWT_SECRET:-change-me}
+      PAYPAL_CLIENT_ID: ${PAYPAL_CLIENT_ID:-}
+      PAYPAL_MODE: ${PAYPAL_MODE:-sandbox}
+      LOGO_URL: ${LOGO_URL:-}
+      USD_VND_RATE: ${USD_VND_RATE:-25000}
+      USD_VND_EXCHANGE: ${USD_VND_EXCHANGE:-}
+      VIETQR_BIN: ${VIETQR_BIN:-}
+      VIETQR_ACC: ${VIETQR_ACC:-}
+      VIETQR_TEMPLATE: ${VIETQR_TEMPLATE:-compact}
+      VIETQR_ACC_NAME: ${VIETQR_ACC_NAME:-}
+    # Expose internally; reverse-proxied by frontend
+    expose:
+      - "3001"
+    # Allow container to reach Postgres running on the host via host.docker.internal
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - appnet
+
+  frontend:
+    container_name: shop-frontend
+    image: ${IMAGE_PREFIX:-local}/shop-frontend:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    ports:
+      - "${FRONTEND_PORT:-80}:80"
+    depends_on:
+      - backend
+    networks:
+      - appnet
+
+  # Optional Postgres database. Disable when using external DB by setting DATABASE_URL
+  db:
+    container_name: shop-postgres
+    image: postgres:15-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-shop}
+      POSTGRES_USER: ${POSTGRES_USER:-shop}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-shop}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - dbdata:/var/lib/postgresql/data
+    networks:
+      - appnet
+
+volumes:
+  dbdata:
+
+networks:
+  appnet:
+    driver: bridge
