@@ -19,7 +19,7 @@ frontend/
 !/routes
 !/scripts
 !/sql
-app.js
-db.js
-package.json
-README.md
+!app.js
+!db.js
+!package.json
+!README.md

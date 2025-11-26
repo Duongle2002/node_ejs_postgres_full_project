@@ -4,6 +4,9 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   server: {
+    // allow hostnames used when accessing the dev server from other machines or DNS
+    // Add reactjs.duongle.io.vn to permit that host (prevents "Blocked request" errors)
+    allowedHosts: ['reactjs.duongle.io.vn'],
     port: 5173,
     proxy: {
       '/api': {

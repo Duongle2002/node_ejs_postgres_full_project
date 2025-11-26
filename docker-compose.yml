@@ -1,0 +1,57 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: Duongcs8602
+      POSTGRES_DB: ecommerce
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d ecommerce"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks:
+      - appnet
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: node-ejs-postgres-shop-full:1.0.0
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PORT: 3002
+      DB_HOST: db
+      DB_USER: postgres
+      DB_PASSWORD: Duongcs8602
+      DB_NAME: ecommerce
+    ports:
+      - "3002:3002"
+    networks:
+      - appnet
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    image: node-ejs-postgres-frontend:1.0.0
+    depends_on:
+      - backend
+    ports:
+      - "5173:80"
+    networks:
+      - appnet
+
+volumes:
+  db_data:
+
+networks:
+  appnet:
+    driver: bridge

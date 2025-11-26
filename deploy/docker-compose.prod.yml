@@ -1,5 +1,3 @@
-version: "3.9"
-
 # Production deployment with backend + frontend (+ optional Postgres)
 services:
   backend:
