@@ -105,28 +105,28 @@ pipeline {
       steps {
         script {
           // Try frontend and backend (via proxy) a few times
-          sh """
-            set -e
-            attempts=0
-            until curl -fsS http://localhost:${FRONTEND_PORT}/ >/dev/null; do
-              attempts=$((attempts+1))
-              if [ "$attempts" -ge 12 ]; then
-                echo "Frontend healthcheck failed" >&2
-                exit 1
-              fi
-              sleep 5
-            done
-            attempts=0
-            until curl -fsS http://localhost:${FRONTEND_PORT}/api/products >/dev/null; do
-              attempts=$((attempts+1))
-              if [ "$attempts" -ge 12 ]; then
-                echo "Backend healthcheck failed" >&2
-                exit 1
-              fi
-              sleep 5
-            done
-            echo "Healthchecks passed"
-          """
+          sh '''
+              set -e
+              attempts=0
+              until curl -fsS http://localhost:${FRONTEND_PORT}/ >/dev/null; do
+                attempts=$((attempts+1))
+                if [ "$attempts" -ge 12 ]; then
+                  echo "Frontend healthcheck failed" >&2
+                  exit 1
+                fi
+                sleep 5
+              done
+              attempts=0
+              until curl -fsS http://localhost:${FRONTEND_PORT}/api/products >/dev/null; do
+                attempts=$((attempts+1))
+                if [ "$attempts" -ge 12 ]; then
+                  echo "Backend healthcheck failed" >&2
+                  exit 1
+                fi
+                sleep 5
+              done
+              echo "Healthchecks passed"
+            '''
         }
       }
     }
