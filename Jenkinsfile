@@ -137,7 +137,9 @@ pipeline {
       script {
         if (params.DEPLOY) {
           echo 'Attempting rollback to previous images...'
-          sh '''
+          // Run rollback steps on an agent (provides hudson.FilePath)
+          node {
+            sh '''
             set -e
             COMPOSE="docker compose"
             if ! docker compose version >/dev/null 2>&1; then
@@ -170,7 +172,8 @@ pipeline {
             else
               echo "No previous images captured; skipping rollback"
             fi
-          '''
+            '''
+          }
         }
       }
     }
