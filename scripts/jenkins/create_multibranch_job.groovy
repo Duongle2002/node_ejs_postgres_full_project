@@ -5,12 +5,10 @@ import jenkins.model.*
 import org.jenkinsci.plugins.workflow.multibranch.WorkflowMultiBranchProject
 import jenkins.branch.BranchSource
 import jenkins.plugins.git.GitSCMSource
-import jenkins.plugins.git.traits.BranchDiscoveryTrait
-import jenkins.scm.api.trait.SCMTrait
 
-def repoUrl = 'https://github.com/youruser/yourrepo.git' // <-- set this
-def credentialsId = '' // <-- set this if your repo is private
-def jobName = 'node-ejs-postgres-shop-full'
+def repoUrl = 'https://github.com/Duongle2002/node_ejs_postgres_full_project.git' // set to your repo
+def credentialsId = '' // set this if your repo is private (leave empty for public)
+def jobName = 'node-ejs-postgres-full_project'
 
 def jenkins = Jenkins.get()
 if (jenkins.getItem(jobName) != null) {
@@ -26,9 +24,9 @@ if (credentialsId) {
   source.setCredentialsId(credentialsId)
 }
 
-// Add branch discovery trait
-def branchTrait = new BranchDiscoveryTrait(1) // discover branches
-source.getTraits().add(branchTrait)
+// Note: some Jenkins plugin versions use different constructors for traits.
+// To keep this script broadly compatible, we avoid adding a BranchDiscoveryTrait here.
+// The Multibranch job will use reasonable defaults for branch discovery.
 
 mb.getSourcesList().add(new BranchSource(source))
 mb.save()
