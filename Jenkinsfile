@@ -11,9 +11,7 @@ pipeline {
     string(name: 'FRONTEND_PORT', defaultValue: '80', description: 'Host port to expose frontend')
   }
 
-  environment {
-    REGISTRY_CREDENTIALS = credentials('REGISTRY_CREDS')
-  }
+  // registry and secrets are bound at-use with withCredentials to avoid empty envs
 
   stages {
     stage('Checkout') {
@@ -33,28 +31,34 @@ pipeline {
 
     stage('Build backend image') {
       steps {
-        sh '''
-          echo "+ Building backend image"
-          docker login -u ${REGISTRY_CREDENTIALS_USR} -p ${REGISTRY_CREDENTIALS_PSW} ${REGISTRY}
-          docker build -t ${REGISTRY}/${IMAGE_PREFIX}/shop-backend:${RESOLVED_TAG} -f Dockerfile .
-          docker tag ${REGISTRY}/${IMAGE_PREFIX}/shop-backend:${RESOLVED_TAG} ${REGISTRY}/${IMAGE_PREFIX}/shop-backend:latest
-          docker push ${REGISTRY}/${IMAGE_PREFIX}/shop-backend:${RESOLVED_TAG}
-          docker push ${REGISTRY}/${IMAGE_PREFIX}/shop-backend:latest
-        '''
+        // bind registry credentials for docker login
+        withCredentials([usernamePassword(credentialsId: 'REGISTRY_CREDS', usernameVariable: 'REGISTRY_USER', passwordVariable: 'REGISTRY_PASS')]) {
+          sh '''
+            echo "+ Building backend image"
+            docker login -u ${REGISTRY_USER} -p ${REGISTRY_PASS} ${REGISTRY}
+            docker build -t ${REGISTRY}/${IMAGE_PREFIX}/shop-backend:${RESOLVED_TAG} -f Dockerfile .
+            docker tag ${REGISTRY}/${IMAGE_PREFIX}/shop-backend:${RESOLVED_TAG} ${REGISTRY}/${IMAGE_PREFIX}/shop-backend:latest
+            docker push ${REGISTRY}/${IMAGE_PREFIX}/shop-backend:${RESOLVED_TAG}
+            docker push ${REGISTRY}/${IMAGE_PREFIX}/shop-backend:latest
+          '''
+        }
       }
     }
 
     stage('Build frontend image') {
       steps {
         dir('frontend') {
-          sh '''
-            echo "+ Building frontend image"
-            docker login -u ${REGISTRY_CREDENTIALS_USR} -p ${REGISTRY_CREDENTIALS_PSW} ${REGISTRY}
-            docker build -t ${REGISTRY}/${IMAGE_PREFIX}/shop-frontend:${RESOLVED_TAG} .
-            docker tag ${REGISTRY}/${IMAGE_PREFIX}/shop-frontend:${RESOLVED_TAG} ${REGISTRY}/${IMAGE_PREFIX}/shop-frontend:latest
-            docker push ${REGISTRY}/${IMAGE_PREFIX}/shop-frontend:${RESOLVED_TAG}
-            docker push ${REGISTRY}/${IMAGE_PREFIX}/shop-frontend:latest
-          '''
+          // bind registry credentials for docker login
+          withCredentials([usernamePassword(credentialsId: 'REGISTRY_CREDS', usernameVariable: 'REGISTRY_USER', passwordVariable: 'REGISTRY_PASS')]) {
+            sh '''
+              echo "+ Building frontend image"
+              docker login -u ${REGISTRY_USER} -p ${REGISTRY_PASS} ${REGISTRY}
+              docker build -t ${REGISTRY}/${IMAGE_PREFIX}/shop-frontend:${RESOLVED_TAG} .
+              docker tag ${REGISTRY}/${IMAGE_PREFIX}/shop-frontend:${RESOLVED_TAG} ${REGISTRY}/${IMAGE_PREFIX}/shop-frontend:latest
+              docker push ${REGISTRY}/${IMAGE_PREFIX}/shop-frontend:${RESOLVED_TAG}
+              docker push ${REGISTRY}/${IMAGE_PREFIX}/shop-frontend:latest
+            '''
+          }
         }
       }
     }
@@ -76,27 +80,36 @@ pipeline {
     stage('Deploy (docker compose)') {
       when { expression { return params.DEPLOY } }
       steps {
-        sh '''
-          set -e
-          # Prefer docker compose v2; fallback to docker-compose
-          COMPOSE="docker compose"
-          if ! docker compose version >/dev/null 2>&1; then
-            COMPOSE="docker-compose"
-          fi
+        // Bind secrets (DATABASE_URL, JWT_SECRET, PAYPAL_*, etc.) so they are available during compose
+        withCredentials([
+          string(credentialsId: 'DATABASE_URL', variable: 'DATABASE_URL'),
+          string(credentialsId: 'JWT_SECRET', variable: 'JWT_SECRET'),
+          string(credentialsId: 'PAYPAL_CLIENT_ID', variable: 'PAYPAL_CLIENT_ID'),
+          string(credentialsId: 'PAYPAL_SECRET', variable: 'PAYPAL_SECRET'),
+          string(credentialsId: 'PAYPAL_MODE', variable: 'PAYPAL_MODE')
+        ]) {
+          sh '''
+            set -e
+            # Prefer docker compose v2; fallback to docker-compose
+            COMPOSE="docker compose"
+            if ! docker compose version >/dev/null 2>&1; then
+              COMPOSE="docker-compose"
+            fi
 
-          export IMAGE_PREFIX=${IMAGE_PREFIX}
-          export IMAGE_TAG=${RESOLVED_TAG}
-          export BACKEND_PORT=${BACKEND_PORT}
-          export FRONTEND_PORT=${FRONTEND_PORT}
-          export DATABASE_URL=${DATABASE_URL}
-          export JWT_SECRET=${JWT_SECRET}
-          export PAYPAL_CLIENT_ID=${PAYPAL_CLIENT_ID}
-          export PAYPAL_MODE=${PAYPAL_MODE}
+            export IMAGE_PREFIX=${IMAGE_PREFIX}
+            export IMAGE_TAG=${RESOLVED_TAG}
+            export BACKEND_PORT=${BACKEND_PORT}
+            export FRONTEND_PORT=${FRONTEND_PORT}
+            export DATABASE_URL=${DATABASE_URL}
+            export JWT_SECRET=${JWT_SECRET}
+            export PAYPAL_CLIENT_ID=${PAYPAL_CLIENT_ID}
+            export PAYPAL_MODE=${PAYPAL_MODE}
 
-          ${COMPOSE} -f ${COMPOSE_FILE} pull
-          ${COMPOSE} -f ${COMPOSE_FILE} up -d
-          ${COMPOSE} -f ${COMPOSE_FILE} ps
-        '''
+            ${COMPOSE} -f ${COMPOSE_FILE} pull
+            ${COMPOSE} -f ${COMPOSE_FILE} up -d
+            ${COMPOSE} -f ${COMPOSE_FILE} ps
+          '''
+        }
       }
     }
 
