@@ -3,12 +3,12 @@ pipeline {
 
   parameters {
     string(name: 'REGISTRY', defaultValue: 'docker.io', description: 'Docker registry, e.g., docker.io or registry.example.com')
-    string(name: 'IMAGE_PREFIX', defaultValue: 'youruser', description: 'Registry namespace (e.g., dockerhub username or org)')
+    string(name: 'IMAGE_PREFIX', defaultValue: 'duongle2002', description: 'Registry namespace (e.g., dockerhub username or org)')
     string(name: 'IMAGE_TAG', defaultValue: '', description: 'Image tag to use (defaults to Git commit)')
     booleanParam(name: 'DEPLOY', defaultValue: true, description: 'Deploy using docker compose on this Jenkins host')
     string(name: 'COMPOSE_FILE', defaultValue: 'deploy/docker-compose.prod.yml', description: 'Path to docker-compose file')
-    string(name: 'BACKEND_PORT', defaultValue: '3001', description: 'Backend container port')
-    string(name: 'FRONTEND_PORT', defaultValue: '80', description: 'Host port to expose frontend')
+    string(name: 'BACKEND_PORT', defaultValue: '3002', description: 'Backend container port')
+    string(name: 'FRONTEND_PORT', defaultValue: '5173', description: 'Host port to expose frontend')
   }
 
   // registry and secrets are bound at-use with withCredentials to avoid empty envs
