@@ -52,6 +52,11 @@ body{
 .btn{background:linear-gradient(90deg,var(--accent), #ff8a3d);color:#081220;border:0;padding:8px 12px;border-radius:8px;cursor:pointer;font-weight:600}
 .btn.secondary{background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--text)}
 .btn.success{background:linear-gradient(90deg,#21c07a,#2ddf8f);color:#041018}
+/* Disabled button styles */
+button[disabled], .btn[disabled]{opacity:0.6; cursor:not-allowed; filter:grayscale(.06)}
+button[disabled].btn, .btn[disabled]{pointer-events:none}
+/* inline spinner for buttons */
+.spinner-inline{border-radius:50%; border:2px solid rgba(255,255,255,0.12); border-top-color:rgba(255,255,255,0.9); width:14px; height:14px; display:inline-block; animation:spin .9s linear infinite}
 input,select,textarea{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.04);padding:8px;border-radius:8px;color:var(--text);width:100%}
 label{display:block;color:var(--muted);font-size:13px}
 form.form{display:grid;gap:10px}

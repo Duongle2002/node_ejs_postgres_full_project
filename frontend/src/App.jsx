@@ -22,17 +22,20 @@ import AdminOrderDetail from './pages/admin/OrderDetail'
 import AdminBanners from './pages/admin/Banners'
 import AdminBannerForm from './pages/admin/BannerForm'
 import { useAuth } from './state/AuthContext'
+import { useTranslation } from 'react-i18next'
 
 function RequireAuth({ children }) {
   const { user, loading } = useAuth()
-  if (loading) return <div>Loading...</div>
+  const { t } = useTranslation()
+  if (loading) return <div>{t('loading')}</div>
   if (!user) return <Navigate to="/login" replace />
   return children
 }
 
 function RequireAdmin({ children }) {
   const { user, loading } = useAuth()
-  if (loading) return <div>Loading...</div>
+  const { t } = useTranslation()
+  if (loading) return <div>{t('loading')}</div>
   if (!user) return <Navigate to="/login" replace />
   if (user.role !== 'admin') return <Navigate to="/" replace />
   return children

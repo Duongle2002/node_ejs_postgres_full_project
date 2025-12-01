@@ -3,12 +3,14 @@ import { Link, useNavigate } from 'react-router-dom'
 import api from '../api/client'
 import ConfirmDialog from '../components/ConfirmDialog'
 import { useToast } from '../state/ToastContext'
+import { useTranslation } from 'react-i18next'
 
 export default function Cart() {
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
   const nav = useNavigate()
   const { addToast } = useToast()
+  const { t } = useTranslation()
   const [confirm, setConfirm] = useState({ open: false })
 
   const load = () => {
@@ -29,7 +31,7 @@ export default function Cart() {
     } catch (err) {
       // revert and notify
       setItems(prev)
-      addToast('Unable to update quantity', { type: 'error' })
+  addToast(t('cart.error'), { type: 'error' })
     }
   }
 
@@ -38,10 +40,10 @@ export default function Cart() {
     setItems(cur => cur.filter(i => i.product_id !== product_id))
     try {
       await api.post('/cart/remove', { product_id })
-      addToast('Removed from cart', { type: 'info' })
+  addToast(t('cart.added'), { type: 'info' })
     } catch (err) {
       setItems(prev)
-      addToast('Unable to remove item', { type: 'error' })
+  addToast(t('cart.error'), { type: 'error' })
     }
   }
 
@@ -50,19 +52,19 @@ export default function Cart() {
     setItems([])
     try {
       await api.post('/cart/clear')
-      addToast('Cart cleared', { type: 'info' })
+  addToast(t('cartTable.clear'), { type: 'info' })
     } catch (err) {
       setItems(prev)
-      addToast('Unable to clear cart', { type: 'error' })
+  addToast(t('cart.error'), { type: 'error' })
     }
   }
 
   const openConfirmRemove = (product_id, name) => {
-    setConfirm({ open: true, action: 'remove', product_id, message: `Remove "${name}" from cart?` })
+    setConfirm({ open: true, action: 'remove', product_id, message: t('confirm.removeFromCart', { name }) })
   }
 
   const openConfirmClear = () => {
-    setConfirm({ open: true, action: 'clear', message: 'Clear the entire cart? This cannot be undone.' })
+    setConfirm({ open: true, action: 'clear', message: t('confirm.clearCart') })
   }
 
   const handleConfirm = async () => {
@@ -80,14 +82,14 @@ export default function Cart() {
 
   return (
     <div>
-      <h1>Cart</h1>
-      {loading ? <div>Loading...</div> : (
+      <h1>{t('cart.title')}</h1>
+      {loading ? <div>{t('loading')}</div> : (
         items.length === 0 ? (
-          <div>Cart is empty. <Link to="/products">Shop now</Link></div>
+          <div>{t('cart.empty')} <Link to="/products">{t('home.shopNow')}</Link></div>
         ) : (
           <>
             <table>
-              <thead><tr><th>Product</th><th>Price</th><th>Qty</th><th>Subtotal</th><th></th></tr></thead>
+              <thead><tr><th>{t('cartTable.product')}</th><th>{t('cartTable.price')}</th><th>{t('cartTable.qty')}</th><th>{t('cartTable.subtotal')}</th><th></th></tr></thead>
               <tbody>
                 {items.map(it => (
                   <tr key={it.product_id}>
@@ -117,22 +119,22 @@ export default function Cart() {
                       </div>
                     </td>
                     <td>${(Number(it.price)*Number(it.qty)).toFixed(2)}</td>
-                    <td><button className="btn secondary" onClick={()=>openConfirmRemove(it.product_id, it.name)}>Remove</button></td>
+                    <td><button className="btn secondary" onClick={()=>openConfirmRemove(it.product_id, it.name)}>{t('cartTable.remove')}</button></td>
                   </tr>
                 ))}
               </tbody>
             </table>
             <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginTop:12}}>
-              <button className="btn secondary" onClick={openConfirmClear}>Clear</button>
+              <button className="btn secondary" onClick={openConfirmClear}>{t('cartTable.clear')}</button>
               <div style={{display:'flex', alignItems:'center', gap:12}}>
-                <div className="price">Total: ${total.toFixed(2)}</div>
-                <button className="btn" onClick={()=>nav('/checkout')}>Proceed to Checkout</button>
+                <div className="price">{t('cartTable.total')}: ${total.toFixed(2)}</div>
+                <button className="btn" onClick={()=>nav('/checkout')}>{t('cart.checkout')}</button>
               </div>
             </div>
           </>
         )
       )}
-        <ConfirmDialog open={confirm.open} title="Confirm" message={confirm.message} onConfirm={handleConfirm} onCancel={handleCancel} />
+  <ConfirmDialog open={confirm.open} title={t('confirm.title')} message={confirm.message} onConfirm={handleConfirm} onCancel={handleCancel} />
     </div>
   )
 }

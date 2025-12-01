@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useNavigate, useParams } from 'react-router-dom'
 import api from '../../api/client'
 
@@ -6,6 +7,7 @@ export default function AdminBannerForm(){
   const { id } = useParams()
   const isEdit = !!id
   const [banner, setBanner] = useState({ title:'', subtitle:'', image_url:'', link:'', type:'promo', accent:'', priority:0 })
+  const { t } = useTranslation()
   const nav = useNavigate()
 
   useEffect(()=>{
@@ -26,7 +28,7 @@ export default function AdminBannerForm(){
       <h1>{isEdit? 'Edit':'Add'} Banner</h1>
       <form className="form" onSubmit={submit} style={{maxWidth:600}}>
         <label>Type<select value={banner.type} onChange={e=>set('type', e.target.value)}>
-          <option value="promo">Promo</option>
+          <option value="promo">{t('promo')}</option>
           <option value="hero">Hero</option>
         </select></label>
         <label>Title<input value={banner.title||''} onChange={e=>set('title', e.target.value)} /></label>

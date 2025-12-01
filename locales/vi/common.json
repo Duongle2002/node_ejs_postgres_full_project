@@ -1,0 +1,35 @@
+{
+  "siteTitle": "ElectroShop",
+  "nav": {
+    "home": "Trang chủ",
+    "products": "Sản phẩm",
+    "cart": "Giỏ hàng",
+    "orders": "Đơn hàng",
+    "profile": "Tài khoản",
+    "login": "Đăng nhập",
+    "register": "Đăng ký",
+    "logout": "Đăng xuất"
+  },
+  "footer": {
+    "newsletter": "Nhận ưu đãi và thông báo sản phẩm.",
+    "subscribe": "Đăng ký",
+    "subscribed": "Đã đăng ký",
+    "helpCenter": "Trung tâm trợ giúp",
+    "returns": "Trả hàng",
+    "contact": "Liên hệ"
+  },
+  "actions": {
+    "save": "Lưu",
+    "cancel": "Hủy",
+    "add": "Thêm",
+    "remove": "Xóa",
+    "edit": "Chỉnh sửa"
+  }
+  ,
+  "products": {
+    "noImage": "Không có ảnh",
+    "outOfStock": "Hết hàng",
+    "inStockCount": "Còn {{count}}",
+    "addToCart": "Thêm vào giỏ"
+  }
+}

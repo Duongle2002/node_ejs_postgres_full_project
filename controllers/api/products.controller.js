@@ -1,4 +1,6 @@
 const pool = require('../../db');
+const path = require('path');
+const fs = require('fs');
 
 exports.list = async (req, res) => {
   const q = (req.query.q || '').trim();
@@ -65,6 +67,15 @@ exports.update = async (req, res) => {
   if (!id) return res.status(400).json({ error: 'missing' });
   const { slug, name, price, stock, short_description, description, image } = req.body;
   try {
+    // remove old image file if being replaced by a new uploads path
+    try {
+      const cur = await pool.query('SELECT image FROM products WHERE id=$1', [id]);
+      const old = cur.rows[0] && cur.rows[0].image ? cur.rows[0].image : null;
+      if (old && image && old !== image && old.startsWith('/uploads/')){
+        const p = path.join(__dirname, '../../public', old.replace(/^\//, ''));
+        fs.unlink(p, () => {});
+      }
+    } catch (e) { /* ignore */ }
     await pool.query(
       'UPDATE products SET slug=$1, name=$2, price=$3, stock=$4, short_description=$5, description=$6, image=$7 WHERE id=$8',
       [slug || null, name || null, price || 0, stock || 0, short_description || null, description || null, image || null, id]

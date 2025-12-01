@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import api from '../api/client'
 import { useToast } from '../state/ToastContext'
+import { useTranslation } from 'react-i18next'
 
 function formatCurrency(n){
   try { return new Intl.NumberFormat(undefined, {style:'currency',currency:'USD'}).format(Number(n)) }
@@ -22,6 +23,8 @@ export default function ProductDetail(){
   const [zoomEnabled, setZoomEnabled] = useState(false)
   const [zoomScale, setZoomScale] = useState(1)
   const [zoomOrigin, setZoomOrigin] = useState({ x: '50%', y: '50%' })
+
+  const { t } = useTranslation()
 
   useEffect(()=>{
     mountedRef.current = true
@@ -82,14 +85,14 @@ export default function ProductDetail(){
 
   const addToCart = async () => {
     if (!product) return
-    if (Number(product.stock) <= 0) { addToast('Out of stock', { type: 'error' }); return }
+    if (Number(product.stock) <= 0) { addToast(t('product.outOfStock'), { type: 'error' }); return }
     try{
       await api.post('/cart/add', { product_id: Number(id), qty: Number(qty) })
-      addToast('Added to cart', { type: 'success' })
+      addToast(t('cart.added'), { type: 'success' })
     }catch(err){
       if (err.response && err.response.status === 401) return navigate('/login')
       console.error('addToCart', err)
-      addToast('Unable to add to cart', { type: 'error' })
+      addToast(t('cart.error'), { type: 'error' })
     }
   }
 
@@ -105,7 +108,7 @@ export default function ProductDetail(){
     </div>
   )
 
-  if (!product) return <div>Product not found</div>
+  if (!product) return <div>{t('productPage.notFound')}</div>
 
   // Hover-based handlers: enable zoom on enter, update origin on move, disable on leave
   const handleImageEnter = (e) => {
@@ -135,9 +138,9 @@ export default function ProductDetail(){
   return (
     <div className="product-page">
       <nav className="breadcrumbs-top" aria-label="Breadcrumb">
-        <Link to="/">Home</Link>
+        <Link to="/">{t('breadcrumbs.home')}</Link>
         <span>/</span>
-        <Link to="/products">Products</Link>
+        <Link to="/products">{t('breadcrumbs.products')}</Link>
         <span>/</span>
         <span aria-current="page">{product.name}</span>
       </nav>
@@ -148,7 +151,7 @@ export default function ProductDetail(){
           {images[activeImage] ? (
             <img src={images[activeImage]} alt={product.name} style={{ transform: `scale(${zoomScale})`, transformOrigin: `${zoomOrigin.x} ${zoomOrigin.y}` }} />
           ) : (
-            <div className="placeholder">No image</div>
+            <div className="placeholder">{t('products.noImage')}</div>
           )}
         </div>
 
@@ -168,16 +171,16 @@ export default function ProductDetail(){
           <h1 id="product-title">{product.name}</h1>
           <div className="price" aria-hidden>{formatCurrency(product.price)}</div>
           <div className={`stock ${Number(product.stock) > 0 ? 'in-stock' : 'out-of-stock'}`} aria-live="polite" style={{marginTop:6}}>
-            {Number(product.stock) > 0 ? `In stock: ${product.stock}` : 'Out of stock'}
+            {Number(product.stock) > 0 ? t('products.inStockCount', { count: product.stock }) : t('product.outOfStock')}
           </div>
 
             <div className="actions" style={{marginTop:12}}>
-            <label style={{display:'block',color:'var(--muted)',fontSize:13}}>Quantity</label>
+            <label style={{display:'block',color:'var(--muted)',fontSize:13}}>{t('productPage.quantity')}</label>
             <div className="qty-control" style={{display:'flex',gap:8,alignItems:'center',marginTop:8}}>
               <button className="btn secondary" aria-label="Decrease quantity" onClick={()=> setQty(Math.max(1, Number(qty)-1))}>-</button>
               <input aria-label="Quantity" className="qty-input" type="number" min={1} value={qty} onChange={e=>setQty(Math.max(1, Number(e.target.value)||1))} />
               <button className="btn secondary" aria-label="Increase quantity" onClick={()=> setQty(Number(qty)+1)}>+</button>
-              <button className="btn" onClick={addToCart} disabled={Number(product.stock) <= 0} aria-disabled={Number(product.stock) <= 0}>Add to cart</button>
+              <button className="btn" onClick={addToCart} disabled={Number(product.stock) <= 0} aria-disabled={Number(product.stock) <= 0}>{t('productPage.addToCart')}</button>
             </div>
             
           </div>
@@ -186,15 +189,15 @@ export default function ProductDetail(){
     </article>
     
       {/* full width product info below the two-column grid */}
-      <div className="product-info">
+        <div className="product-info">
         <div className="description" style={{marginTop:18}}>
-          <h3>Product details</h3>
+          <h3>{t('productPage.details')}</h3>
           <div style={{whiteSpace:'pre-wrap',color:'var(--text)'}}>{product.description}</div>
         </div>
 
         {related.length > 0 && (
           <div className="related" style={{marginTop:20}}>
-            <h3>Related products</h3>
+            <h3>{t('productPage.related')}</h3>
             <div className="grid" style={{marginTop:12}}>
               {related.map(rp => (
                 <div key={rp.id} className="product-card" onClick={()=> navigate(`/products/${rp.id}`)} style={{cursor:'pointer'}}>

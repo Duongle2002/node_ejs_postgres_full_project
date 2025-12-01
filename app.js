@@ -1,5 +1,8 @@
 require('dotenv').config();
 const express = require('express');
+const i18next = require('i18next')
+const Backend = require('i18next-fs-backend')
+const i18nextMiddleware = require('i18next-http-middleware')
 const cookieParser = require('cookie-parser');
 const path = require('path');
 const app = express();
@@ -18,6 +21,26 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
+
+// initialize server-side i18n
+i18next
+	.use(Backend)
+	.use(i18nextMiddleware.LanguageDetector)
+	.init({
+			fallbackLng: 'vi',
+			preload: ['vi','en'],
+			ns: ['common'],
+			defaultNS: 'common',
+			backend: { loadPath: path.join(__dirname, 'locales/{{lng}}/{{ns}}.json') }
+	})
+
+app.use(i18nextMiddleware.handle(i18next))
+
+// expose t() to EJS views via res.locals.t
+app.use((req,res,next)=>{
+	res.locals.t = req.t ? req.t : (k,opts)=> i18next.t(k,opts)
+	next()
+})
 
 // use ejs-mate for layout/partials support (enables `layout('layout')` in views)
 app.engine('ejs', engine);
@@ -127,6 +150,28 @@ app.use('/api/cart', apiCart);
 app.use('/api/addresses', apiAddresses);
 app.use('/api/orders', apiOrders);
 app.use('/api/banners', require('./routes/api/banners'));
+// file uploads (admin)
+app.use('/api/upload', require('./routes/api/upload'));
 
+const fs = require('fs')
+const https = require('https')
 const PORT = process.env.PORT || 3001;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+
+// Optional HTTPS: if SSL_KEY and SSL_CERT env vars (paths) are provided, start an HTTPS server.
+// Example: SSL_KEY=/secrets/privkey.pem SSL_CERT=/secrets/fullchain.pem node app.js
+const sslKeyPath = process.env.SSL_KEY || ''
+const sslCertPath = process.env.SSL_CERT || ''
+const sslPort = process.env.SSL_PORT || 443
+
+if (sslKeyPath && sslCertPath) {
+	try {
+		const key = fs.readFileSync(require('path').resolve(sslKeyPath))
+		const cert = fs.readFileSync(require('path').resolve(sslCertPath))
+		https.createServer({ key, cert }, app).listen(sslPort, () => console.log(`HTTPS server running on port ${sslPort}`))
+	} catch (e) {
+		console.error('Failed to start HTTPS server, falling back to HTTP:', e.message)
+		app.listen(PORT, () => console.log(`Server running on port ${PORT}`))
+	}
+} else {
+	app.listen(PORT, () => console.log(`Server running on port ${PORT}`))
+}

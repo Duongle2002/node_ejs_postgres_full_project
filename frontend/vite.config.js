@@ -18,6 +18,11 @@ export default defineConfig({
         target: 'http://localhost:3002',
         changeOrigin: true
       },
+      // Serve uploaded images from backend during dev
+      '/uploads': {
+        target: 'http://localhost:3002',
+        changeOrigin: true
+      },
       // Admin stats JSON/CSV endpoints only (keep /admin route in SPA)
       '/admin/stats.json': {
         target: 'http://localhost:3002',

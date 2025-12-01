@@ -1,0 +1,123 @@
+{
+  "loading": "Đang tải...",
+  "notFound": "Không tìm thấy",
+  "home": {
+    "welcome": "Chào mừng đến với cửa hàng",
+    "subtitle": "Khám phá những sản phẩm mới nhất với giá tốt nhất.",
+    "shopNow": "Mua sắm ngay",
+    "featured": "Sản phẩm nổi bật",
+    "viewAll": "Xem tất cả"
+  },
+  "hero": {
+    "defaultTitle": "Upgrade your setup with top electronics",
+    "defaultSubtitle": "Exclusive deals on laptops, phones, accessories and more. Free shipping for orders over $99.",
+    "shopDeals": "Ưu đãi",
+    "newArrivals": "Hàng mới"
+  },
+  "promo": "Khuyến mãi",
+  "products": {
+    "title": "Danh sách sản phẩm",
+    "addProduct": "Thêm sản phẩm",
+    "filter": "Lọc",
+    "clearFilter": "Xóa lọc",
+    "noProducts": "Chưa có sản phẩm nào.",
+    "found": "Tìm thấy {{count}} sản phẩm",
+    "noImage": "Không có ảnh",
+    "outOfStock": "Hết hàng",
+    "inStockCount": "Còn {{count}}"
+  },
+  "search": {
+    "placeholder": "Tìm kiếm",
+    "button": "Tìm kiếm"
+  },
+  "pagination": {
+    "prev": "Trước",
+    "next": "Tiếp",
+    "pageInfo": "Trang {{page}} / {{total}}"
+  },
+  "product": {
+    "view": "Xem",
+    "addToCart": "Thêm vào giỏ",
+    "outOfStock": "Hết hàng"
+  },
+  "breadcrumbs": {
+    "home": "Trang chủ",
+    "products": "Sản phẩm"
+  },
+  "productPage": {
+    "notFound": "Không tìm thấy sản phẩm",
+    "details": "Chi tiết sản phẩm",
+    "related": "Sản phẩm liên quan",
+    "quantity": "Số lượng",
+    "addToCart": "Thêm vào giỏ"
+  },
+  "cartTable": {
+    "product": "Sản phẩm",
+    "price": "Giá",
+    "qty": "Số lượng",
+    "subtotal": "Tạm tính",
+    "remove": "Xóa",
+    "clear": "Xóa",
+    "total": "Tổng"
+  },
+  "cart": {
+    "title": "Giỏ hàng",
+    "empty": "Giỏ hàng trống",
+    "checkout": "Thanh toán",
+    "added": "Đã thêm vào giỏ hàng",
+    "error": "Không thể thêm vào giỏ hàng"
+  },
+  "confirm": {
+    "title": "Xác nhận",
+    "removeFromCart": "Xóa \"{{name}}\" khỏi giỏ hàng?",
+    "clearCart": "Xóa toàn bộ giỏ hàng? Hành động không thể hoàn tác."
+  },
+  "auth": {
+    "login": "Đăng nhập",
+    "register": "Đăng ký",
+    "email": "Email",
+    "password": "Mật khẩu",
+    "name": "Tên"
+  },
+  "user": {
+    "account": "Tài khoản",
+    "profile": "Hồ sơ",
+    "continueShopping": "Tiếp tục mua sắm"
+  },
+  "success": {
+    "title": "Thanh toán thành công",
+    "viewOrder": "Xem đơn hàng",
+    "continueShopping": "Tiếp tục mua sắm"
+  },
+  "form": {
+    "save": "Lưu",
+    "cancel": "Hủy",
+    "addAddress": "Thêm địa chỉ",
+    "saved": "Đã lưu"
+  }
+  ,"nav":{
+    "dashboard":"Bảng điều khiển",
+    "products":"Sản phẩm",
+    "orders":"Đơn hàng",
+    "users":"Người dùng",
+    "banners":"Banners",
+    "home":"Trang chủ",
+    "cart":"Giỏ hàng",
+    "profile":"Tài khoản",
+    "login":"Đăng nhập",
+    "register":"Đăng ký",
+    "logout":"Đăng xuất"
+  },
+  "footer":{
+    "quickLinks":"Liên kết nhanh",
+    "support":"Hỗ trợ",
+    "newsletter":"Bản tin",
+    "newsletterText":"Nhận ưu đãi và thông báo sản phẩm.",
+    "subscribe":"Đăng ký",
+    "subscribed":"Đã đăng ký"
+  ,
+    "helpCenter": "Trung tâm trợ giúp",
+    "returns": "Trả hàng",
+    "contact": "Liên hệ"
+  }
+}

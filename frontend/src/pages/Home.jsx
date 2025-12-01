@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import api from '../api/client'
 import { useToast } from '../state/ToastContext'
+import { useTranslation } from 'react-i18next'
 
 export default function Home() {
   const [products, setProducts] = useState([])
@@ -22,19 +23,20 @@ export default function Home() {
   }, [])
   const navigate = useNavigate()
   const { addToast } = useToast()
+  const { t } = useTranslation()
   const addToCart = async (e, product) => {
     e.stopPropagation()
     try {
       await api.post('/cart/add', { product_id: product.id, qty: 1 })
-      addToast('Added to cart', { type: 'success' })
+      addToast(t('cart.added'), { type: 'success' })
     } catch (err) {
       if (err.response && err.response.status === 401) return navigate('/login')
       console.error('addToCart', err)
-      addToast('Could not add to cart', { type: 'error' })
+      addToast(t('cart.error'), { type: 'error' })
     }
   }
 
-  if (loading) return <div>Loading...</div>
+  if (loading) return <div>{t('loading')}</div>
   const hero = banners.find(b => b.type === 'hero') || null
 
   return (
@@ -45,20 +47,20 @@ export default function Home() {
             <h2>{hero.title}</h2>
             <p>{hero.subtitle}</p>
             <div className="cta">
-              <Link to={hero.link || '/products'} className="btn">Shop Now</Link>
-              <Link to="/products" className="btn secondary">See More</Link>
+              <Link to={hero.link || '/products'} className="btn">{t('home.shopNow')}</Link>
+              <Link to="/products" className="btn secondary">{t('home.viewAll')}</Link>
             </div>
           </div>
           {hero.image_url && <img src={hero.image_url} alt={hero.title} />}
         </div>
       ) : (
-        <div className="hero">
+          <div className="hero">
           <div className="left">
-            <h2>Upgrade your setup with top electronics</h2>
-            <p>Exclusive deals on laptops, phones, accessories and more. Free shipping for orders over $99.</p>
+            <h2>{t('hero.defaultTitle')}</h2>
+            <p>{t('hero.defaultSubtitle')}</p>
             <div className="cta">
-              <Link to="/products" className="btn">Shop Deals</Link>
-              <Link to="/products" className="btn secondary">New Arrivals</Link>
+              <Link to="/products" className="btn">{t('hero.shopDeals')}</Link>
+              <Link to="/products" className="btn secondary">{t('hero.newArrivals')}</Link>
             </div>
           </div>
           <img src="https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?q=80&w=1400&auto=format&fit=crop&ixlib=rb-4.0.3&s=placeholder" alt="hero"/>
@@ -71,7 +73,7 @@ export default function Home() {
             {b.image_url && <img src={b.image_url} alt={b.title} />}
             <div className="info">
               {b.accent && <div className="tag" style={{background:b.accent}}>{b.title}</div>}
-              {!b.accent && <div className="tag">Promo</div>}
+              {!b.accent && <div className="tag">{t('promo')}</div>}
               <h4>{b.title}</h4>
               <p className="muted">{b.subtitle}</p>
             </div>
@@ -79,7 +81,7 @@ export default function Home() {
         ))}
       </div>
 
-      <h2 style={{marginTop:6}}>Featured Products</h2>
+  <h2 style={{marginTop:6}}>{t('home.featured')}</h2>
       <div className="grid">
         {products.map(p => (
           <div key={p.id} className="product-card" onClick={()=> navigate(`/products/${p.id}`)} style={{cursor:'pointer'}}>
@@ -91,7 +93,9 @@ export default function Home() {
                 <div className="muted">Stock: {p.stock}</div>
               </div>
               <div className="card-actions">
-                <button className="btn" onClick={(e)=> addToCart(e, p)}>Add to cart</button>
+                <button className="btn" onClick={(e)=> addToCart(e, p)} disabled={Number(p.stock) <= 0} aria-disabled={Number(p.stock) <= 0}>
+                  {Number(p.stock) <= 0 ? t('product.outOfStock') : t('product.addToCart')}
+                </button>
               </div>
             </div>
             <p>{p.short_description}</p>

@@ -28,13 +28,11 @@
             <p class="product-card__price"><%= fmtPrice(p.price) %></p>
             <div class="product-card__actions">
               <a href="/products/<%= p.id %>" class="btn btn-outline">Xem</a>
-              <% if ((p.stock || 0) > 0) { %>
-                <form method="POST" action="/cart/add/<%= p.id %>">
-                  <button class="btn btn-primary" type="submit">Thêm vào giỏ</button>
-                </form>
-              <% } else { %>
-                <span class="muted">Hết hàng</span>
-              <% } %>
+              <form method="POST" action="/cart/add/<%= p.id %>">
+                <button class="btn btn-primary" type="submit" <%= (p.stock || 0) <= 0 ? 'disabled' : '' %> aria-disabled="<%= (p.stock || 0) <= 0 %>">
+                  <%= (p.stock || 0) <= 0 ? 'Hết hàng' : 'Thêm vào giỏ' %>
+                </button>
+              </form>
             </div>
           </div>
         </article>

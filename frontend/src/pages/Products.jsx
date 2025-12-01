@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useSearchParams, useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import api from '../api/client'
 import { useToast } from '../state/ToastContext'
 
@@ -22,27 +23,28 @@ export default function Products() {
   const prev = () => setSp({ q, page: String(Math.max(1,page-1)) })
   const navigate = useNavigate()
   const { addToast } = useToast()
+  const { t } = useTranslation()
 
   const addToCart = async (e, product) => {
     e.stopPropagation()
     try {
       await api.post('/cart/add', { product_id: product.id, qty: 1 })
-      addToast('Added to cart', { type: 'success' })
+  addToast(t('cart.added'), { type: 'success' })
     } catch (err) {
       if (err.response && err.response.status === 401) return navigate('/login')
       console.error('addToCart', err)
-      addToast('Could not add to cart', { type: 'error' })
+  addToast(t('cart.error'), { type: 'error' })
     }
   }
 
   return (
     <div>
-      <h1>Products</h1>
+      <h1>{t('products.title')}</h1>
       <form className="form" onSubmit={e=>{e.preventDefault(); setSp({ q: e.currentTarget.q.value, page:'1' })}}>
-        <input name="q" defaultValue={q} placeholder="Search" />
-        <div><button className="btn" type="submit">Search</button></div>
+        <input name="q" defaultValue={q} placeholder={t('search.placeholder')} />
+        <div><button className="btn" type="submit">{t('search.button')}</button></div>
       </form>
-      {loading ? <div>Loading...</div> : (
+      {loading ? <div>{t('loading')}</div> : (
         <>
           <div className="grid" style={{marginTop:12}}>
             {products.map(p => (
@@ -55,7 +57,9 @@ export default function Products() {
                     <div className="muted">Stock: {p.stock}</div>
                   </div>
                   <div className="card-actions">
-                    <button className="btn" onClick={(e)=> addToCart(e, p)}>Add to cart</button>
+                    <button className="btn" onClick={(e)=> addToCart(e, p)} disabled={Number(p.stock) <= 0} aria-disabled={Number(p.stock) <= 0}>
+                      {Number(p.stock) <= 0 ? t('product.outOfStock') : t('product.addToCart')}
+                    </button>
                   </div>
                 </div>
                 <p>{p.short_description}</p>
@@ -63,9 +67,9 @@ export default function Products() {
             ))}
           </div>
           <div style={{marginTop:12, display:'flex', gap:8, alignItems:'center'}}>
-            <button className="btn secondary" onClick={prev} disabled={meta.page<=1}>Prev</button>
-            <span className="muted">Page {meta.page} / {Math.max(1, Math.ceil(meta.total/(meta.limit||20)))}</span>
-            <button className="btn secondary" onClick={next} disabled={meta.page >= Math.ceil(meta.total/(meta.limit||20))}>Next</button>
+            <button className="btn secondary" onClick={prev} disabled={meta.page<=1}>{t('pagination.prev')}</button>
+            <span className="muted">{t('pagination.pageInfo', { page: meta.page, total: Math.max(1, Math.ceil(meta.total/(meta.limit||20))) })}</span>
+            <button className="btn secondary" onClick={next} disabled={meta.page >= Math.ceil(meta.total/(meta.limit||20))}>{t('pagination.next')}</button>
           </div>
         </>
       )}

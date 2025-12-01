@@ -56,6 +56,15 @@ exports.update = async (req, res) => {
     return res.status(400).render('admin/products/form', { title: 'Sửa sản phẩm', product: { id, name, price, description, image, stock }, action: `/admin/products/${id}`, errors });
   }
   try {
+    // remove old image file if replaced by new uploads path
+    try {
+      const cur = await pool.query('SELECT image FROM products WHERE id=$1', [id]);
+      const old = cur.rows[0] && cur.rows[0].image ? cur.rows[0].image : null;
+      if (old && image && old !== image && old.startsWith('/uploads/')){
+        const p = require('path').join(__dirname, '../public', old.replace(/^\//, ''));
+        require('fs').unlink(p, () => {});
+      }
+    } catch (e) {}
     await pool.query(
       'UPDATE products SET name=$1, price=$2, description=$3, image=$4, stock=$5 WHERE id=$6',
       [name, price, description, image, parseInt(stock,10)||0, id]

@@ -32,6 +32,15 @@ services:
       DB_USER: postgres
       DB_PASSWORD: Duongcs8602
       DB_NAME: ecommerce
+      # PayPal credentials (use .env to supply values locally)
+      PAYPAL_CLIENT_ID: ${PAYPAL_CLIENT_ID:-}
+      PAYPAL_CLIENT_SECRET: ${PAYPAL_CLIENT_SECRET:-}
+      PAYPAL_MODE: ${PAYPAL_MODE:-sandbox}
+      # VietQR (optional)
+      VIETQR_BIN: ${VIETQR_BIN:-}
+      VIETQR_ACC: ${VIETQR_ACC:-}
+      VIETQR_TEMPLATE: ${VIETQR_TEMPLATE:-compact}
+      VIETQR_ACC_NAME: ${VIETQR_ACC_NAME:-}
     ports:
       - "3002:3002"
     networks:

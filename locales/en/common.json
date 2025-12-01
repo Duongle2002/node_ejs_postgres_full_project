@@ -1,0 +1,35 @@
+{
+  "siteTitle": "ElectroShop",
+  "nav": {
+    "home": "Home",
+    "products": "Products",
+    "cart": "Cart",
+    "orders": "Orders",
+    "profile": "Profile",
+    "login": "Login",
+    "register": "Register",
+    "logout": "Logout"
+  },
+  "footer": {
+    "newsletter": "Get deals and product announcements.",
+    "subscribe": "Subscribe",
+    "subscribed": "Subscribed",
+    "helpCenter": "Help Center",
+    "returns": "Returns",
+    "contact": "Contact"
+  },
+  "actions": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "add": "Add",
+    "remove": "Remove",
+    "edit": "Edit"
+  }
+  ,
+  "products": {
+    "noImage": "No image",
+    "outOfStock": "Out of stock",
+    "inStockCount": "In stock: {{count}}",
+    "addToCart": "Add to cart"
+  }
+}

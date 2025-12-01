@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import api from '../api/client'
+import { useTranslation } from 'react-i18next'
 
 export default function OrderDetail() {
   const { id } = useParams()
@@ -12,6 +13,7 @@ export default function OrderDetail() {
   const [showCancel, setShowCancel] = useState(false)
   const [cancelReason, setCancelReason] = useState('')
   const [saving, setSaving] = useState(false)
+  const { t } = useTranslation()
 
   useEffect(() => {
     let mounted = true
@@ -65,8 +67,8 @@ export default function OrderDetail() {
     }
   }
 
-  if (loading) return <div>Loading...</div>
-  if (!order) return <div>Not found</div>
+  if (loading) return <div>{t('loading')}</div>
+  if (!order) return <div>{t('notFound')}</div>
 
   return (
     <div>
@@ -122,7 +124,7 @@ export default function OrderDetail() {
               <div className="product-thumb">
                 {(it.image || it.product_image)
                   ? (<img src={it.image || it.product_image} alt={it.name || ''} />)
-                  : (<div className="muted">No image</div>)}
+                  : (<div className="muted">{t('products.noImage')}</div>)}
               </div>
               <div className="product-meta">
                 <div>
