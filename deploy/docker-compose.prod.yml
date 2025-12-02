@@ -19,9 +19,9 @@ services:
       VIETQR_ACC: ${VIETQR_ACC:-}
       VIETQR_TEMPLATE: ${VIETQR_TEMPLATE:-compact}
       VIETQR_ACC_NAME: ${VIETQR_ACC_NAME:-}
-    # Expose internally; reverse-proxied by frontend
-    expose:
-      - "3001"
+    # Publish backend port so it is reachable from the host (useful for debugging)
+    ports:
+      - "3002:3001"
     # Allow container to reach Postgres running on the host via host.docker.internal
     extra_hosts:
       - "host.docker.internal:host-gateway"
