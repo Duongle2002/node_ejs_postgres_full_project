@@ -103,6 +103,8 @@ pipeline {
             export DATABASE_URL=${DATABASE_URL}
             export JWT_SECRET=${JWT_SECRET}
             export PAYPAL_CLIENT_ID=${PAYPAL_CLIENT_ID}
+            # PAYPAL_SECRET from Jenkins credentials is exported as PAYPAL_CLIENT_SECRET for compose
+            export PAYPAL_CLIENT_SECRET=${PAYPAL_SECRET}
             export PAYPAL_MODE=${PAYPAL_MODE}
 
             ${COMPOSE} -f ${COMPOSE_FILE} pull

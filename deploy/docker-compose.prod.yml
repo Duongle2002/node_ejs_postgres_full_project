@@ -11,6 +11,7 @@ services:
       PORT: ${BACKEND_PORT:-3001}
       JWT_SECRET: ${JWT_SECRET:-change-me}
       PAYPAL_CLIENT_ID: ${PAYPAL_CLIENT_ID:-}
+      PAYPAL_CLIENT_SECRET: ${PAYPAL_CLIENT_SECRET:-}
       PAYPAL_MODE: ${PAYPAL_MODE:-sandbox}
       LOGO_URL: ${LOGO_URL:-}
       USD_VND_RATE: ${USD_VND_RATE:-25000}
@@ -21,7 +22,7 @@ services:
       VIETQR_ACC_NAME: ${VIETQR_ACC_NAME:-}
     # Publish backend port so it is reachable from the host (useful for debugging)
     ports:
-      - "3002:3001"
+      - "3002:3002"
     # Allow container to reach Postgres running on the host via host.docker.internal
     extra_hosts:
       - "host.docker.internal:host-gateway"

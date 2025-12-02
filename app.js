@@ -6,6 +6,11 @@ const i18nextMiddleware = require('i18next-http-middleware')
 const cookieParser = require('cookie-parser');
 const path = require('path');
 const app = express();
+// If the app runs behind a reverse proxy (nginx, Traefik, load balancer),
+// enable trust proxy so req.protocol and req.get('host') reflect the
+// original request's X-Forwarded-* headers. This helps building correct
+// external URLs (e.g., PayPal return_url).
+app.set('trust proxy', true);
 const engine = require('ejs-mate');
 const jwt = require('jsonwebtoken');
 // API routes

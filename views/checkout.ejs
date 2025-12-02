@@ -223,7 +223,7 @@ if (payBtn) payBtn.addEventListener('click', async () => {
     if (!address_id) { showToast('Vui lòng chọn hoặc thêm địa chỉ nhận hàng'); return; }
     const pm = (document.querySelector('input[name="pm"]:checked')||{}).value || 'paypal';
     if (pm === 'paypal'){
-  const res = await fetch('/order/paypal/create', { method:'POST', headers:{'Accept':'application/json','Content-Type':'application/json'}, credentials:'include', body: JSON.stringify({ address_id, ship_method }) });
+  const res = await fetch('/order/paypal/create', { method:'POST', headers:{'Accept':'application/json','Content-Type':'application/json'}, credentials:'include', body: JSON.stringify({ address_id, ship_method, client: 'frontend' }) });
       if (res.redirected || res.status === 401){ window.location = '/login'; return; }
       const data = await res.json().catch(()=>null);
       if (!data){ showToast('Lỗi máy chủ'); return; }

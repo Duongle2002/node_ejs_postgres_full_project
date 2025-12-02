@@ -82,7 +82,9 @@ exports.createOrder = async (req, res) => {
 
   const request = new paypal.orders.OrdersCreateRequest();
   // ensure PayPal redirects back to our capture endpoint after the buyer approves
-  const baseUrl = req.protocol + '://' + req.get('host');
+  // Prefer an explicit public backend URL (useful when running behind a proxy or in containers).
+  // Set BACKEND_PUBLIC_URL in your deploy/.env or environment to the public URL that PayPal should redirect to.
+  const baseUrl = process.env.BACKEND_PUBLIC_URL || (req.protocol + '://' + req.get('host'));
   request.requestBody({
     intent: 'CAPTURE',
     purchase_units: [{ amount: { currency_code: 'USD', value: grandTotal } }],
@@ -180,6 +182,21 @@ exports.capture = async (req, res) => {
     }
   } catch (err) {
     console.error('PayPal capture error', err && err._originalError ? err._originalError.text || err.message : err);
+    // If PayPal reports the order was already captured, treat this as a successful outcome
+    // (this can happen if the return URL is hit twice). Redirect the user to a safe
+    // success location instead of failing.
+    try {
+      const raw = err && err._originalError && err._originalError.text ? err._originalError.text : (err && err.message ? err.message : null);
+      if (raw && String(raw).includes('ORDER_ALREADY_CAPTURED')) {
+        const clientOrigin = (req.cookies && req.cookies.checkout_client) ? String(req.cookies.checkout_client) : null;
+        if (clientOrigin === 'frontend') {
+          return res.redirect(FRONTEND_URL + '/orders');
+        }
+        return res.redirect('/orders');
+      }
+    } catch (e) {
+      // fall through to generic failure
+    }
     res.send('Capture failed');
   }
 };
