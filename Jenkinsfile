@@ -113,6 +113,76 @@ pipeline {
       }
     }
 
+    stage('Post-Deploy Verification') {
+      when { expression { return params.DEPLOY } }
+      steps {
+        // Re-bind DATABASE_URL and ports so we use the same env as deploy
+        withCredentials([
+          string(credentialsId: 'DATABASE_URL', variable: 'DATABASE_URL'),
+          string(credentialsId: 'JWT_SECRET', variable: 'JWT_SECRET')
+        ]) {
+          sh '''
+            set -e
+            COMPOSE="docker compose"
+            if ! docker compose version >/dev/null 2>&1; then
+              COMPOSE="docker-compose"
+            fi
+
+            export IMAGE_PREFIX=${IMAGE_PREFIX}
+            export IMAGE_TAG=${RESOLVED_TAG}
+            export BACKEND_PORT=${BACKEND_PORT}
+            export FRONTEND_PORT=${FRONTEND_PORT}
+            export DATABASE_URL=${DATABASE_URL}
+
+            echo "Checking services..."
+            ${COMPOSE} -f ${COMPOSE_FILE} ps
+
+            echo "Waiting for DB service to become healthy (up to 60s)"
+            i=0
+            while [ $i -lt 12 ]; do
+              if ${COMPOSE} -f ${COMPOSE_FILE} ps --services --filter "status=running" | grep -q db; then
+                # if service has a healthcheck, check it
+                HEALTH=$(docker inspect --format='{{json .State.Health}}' $(docker compose -f ${COMPOSE_FILE} ps -q db) 2>/dev/null || echo null)
+                if [ "$HEALTH" != "null" ] && echo "$HEALTH" | grep -q '"Status":"healthy"'; then
+                  echo "DB is healthy"
+                  break
+                fi
+                # otherwise assume running is fine
+                if ${COMPOSE} -f ${COMPOSE_FILE} ps | grep -q "db"; then
+                  echo "DB container running"
+                  break
+                fi
+              fi
+              i=$((i+1))
+              sleep 5
+              echo "waiting... $i"
+            done
+
+            echo "Probing backend HTTP (up to 60s)"
+            ok=1
+            for j in 1 2 3 4 5 6 7 8 9 10 11 12; do
+              HTTP_CODE=$(curl -sS -o /dev/null -w "%{http_code}" http://localhost:${BACKEND_PORT:-3002}/ || true)
+              echo "Attempt $j -> $HTTP_CODE"
+              if [ "$HTTP_CODE" = "200" ]; then
+                ok=0
+                break
+              fi
+              sleep 5
+            done
+
+            if [ $ok -ne 0 ]; then
+              echo "Backend did not respond with 200 after retries"
+              ${COMPOSE} -f ${COMPOSE_FILE} ps
+              ${COMPOSE} -f ${COMPOSE_FILE} logs --tail=200 backend || true
+              exit 1
+            fi
+
+            echo "Post-deploy verification succeeded"
+          '''
+        }
+      }
+    }
+
   }
 
   post {
