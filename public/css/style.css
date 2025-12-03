@@ -141,6 +141,18 @@ td,th{padding:10px;border:1px solid var(--border)}
 .site-footer .footer-col .muted{color:var(--muted)}
 @media (max-width:800px){.site-footer__inner{grid-template-columns:repeat(2,1fr)}}
 
+/* Creator box under exchange rate */
+.creator-box{margin-top:10px; display:flex; align-items:center; gap:10px}
+.creator-avatar{width:36px; height:36px; border-radius:50%; overflow:hidden; border:1px solid var(--border); background:#0b1220}
+.creator-avatar img{width:100%; height:100%; object-fit:cover; display:block}
+.creator-meta{font-size:13px}
+.creator-meta a{color:var(--text); text-decoration:none}
+.creator-meta a:hover{text-decoration:underline}
+
+/* Small icon for exchange rate */
+.rate-icon{width:16px; height:16px; line-height:0; display:inline-flex; align-items:center; justify-content:center}
+.rate-icon svg{display:block}
+
 /* Order history list */
 .order-list{max-width:1100px; margin:0 auto; padding:20px}
 .order-item{display:flex; align-items:center; justify-content:space-between; gap:12px; padding:12px; border-radius:10px; border:1px solid var(--border); margin-bottom:12px; background:linear-gradient(180deg, rgba(255,255,255,0.01), transparent)}

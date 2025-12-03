@@ -53,7 +53,7 @@
     <div class="site-footer__inner">
       <div class="footer-col">
         <a class="logo" href="/">Shop</a>
-        <div class="muted" style="margin-top:6px">&copy; <%= new Date().getFullYear() %> Shop. All rights reserved.</div>
+        <div class="muted" style="margin-top:6px">&copy; <%= new Date().getFullYear() %> Shop by group two. All rights reserved.</div>
       </div>
       <div class="footer-col">
         <strong>Khám phá</strong>
@@ -67,7 +67,25 @@
       </div>
       <div class="footer-col">
         <strong>Thông tin</strong>
-        <div class="muted" style="font-size:13px">Tỷ giá: <strong><%= usdToVnd %></strong> VND / USD</div>
+        <div class="muted" style="font-size:13px; display:flex; align-items:center; gap:6px">
+          <span class="rate-icon" aria-hidden="true" title="Tỷ giá">
+            <!-- Inline SVG icon -->
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 3a9 9 0 1 0 9 9h-2a7 7 0 1 1-7-7V3Z" fill="#4CAF50"/>
+              <path d="M12 7c-2.21 0-4 1.79-4 4h2a2 2 0 1 1 2 2h-1v2h1a4 4 0 1 0 0-8Z" fill="#2E7D32"/>
+            </svg>
+          </span>
+          <span>Tỷ giá: <strong><%= usdToVnd %></strong> VND / USD</span>
+        </div>
+        <div class="creator-box">
+          <div class="creator-avatar">
+            <img src="https://avatars.githubusercontent.com/u/127738060?v=4" alt="Creator" loading="lazy">
+          </div>
+          <div class="creator-meta">
+            <div class="creator-name">Được tạo bởi <strong>Duong Le</strong></div>
+            <div class="creator-links"><a href="https://github.com/Duongle2002" target="_blank" rel="noopener">GitHub</a></div>
+          </div>
+        </div>
       </div>
     </div>
   </footer>
